@@ -1,0 +1,1669 @@
+<!DOCTYPE html><html lang="id"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gudang Roti</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>:root { --cream: rgb(251,247,238); --wheat: rgb(232,220,192); --brown: rgb(74,55,40); --brown-soft: rgb(138,111,82); --amber: rgb(198,138,46); --teal: rgb(46,110,98); --red: rgb(180,68,46); --blue: rgb(46,92,138); --line: rgb(220,208,178); --white: rgb(255,255,255); }* { box-sizing: border-box; }body { margin: 0; font-family: "Segoe UI", system-ui, -apple-system, sans-serif; background: var(--cream); color: var(--brown); }header { background: var(--brown); color: var(--cream); padding: 16px 22px 16px 22px; display: flex; align-items: center; gap: 12px; }header .icon { width: 36px; height: 36px; border-radius: 8px; background: var(--amber); display: flex; align-items: center; justify-content: center; font-size: 19px; }header h1 { font-size: 18px; margin: 0; letter-spacing: 0.3px; }header p { margin: 2px 0 0 0; font-size: 11.5px; color: var(--wheat); }nav { display: flex; background: var(--white); border: 1px solid var(--line); overflow-x: auto; }nav button { padding: 12px 16px 12px 16px; border-top: none; border-right: none; border-bottom: 3px solid transparent; border-left: none; background: none; font-size: 13px; font-weight: 600; color: var(--brown-soft); cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 6px; }nav button.active { color: var(--brown); border: 3px solid var(--amber); }nav button .badge { background: var(--amber); color: rgb(255, 255, 255); font-size: 10px; font-weight: 700; padding: 1px 6px 1px 6px; border-radius: 20px; }main { padding: 18px; max-width: 1150px; margin: 0 auto 0 auto; }.card { background: var(--white); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 14px; }.card h2 { margin: 0 0 4px 0; font-size: 15px; }.card .sub { font-size: 12px; color: var(--brown-soft); margin-bottom: 12px; }.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }.stat { background: var(--cream); border: 1px solid var(--line); border-radius: 8px; padding: 11px 13px 11px 13px; }.stat .label { font-size: 10.5px; color: var(--brown-soft); text-transform: uppercase; letter-spacing: 0.4px; }.stat .value { font-size: 18px; font-weight: 700; margin-top: 3px; }.stat.pos .value { color: var(--teal); }.stat.neg .value { color: var(--red); }form.inline { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }.field { display: flex; flex-direction: column; gap: 4px; }.field label { font-size: 11.5px; color: var(--brown-soft); font-weight: 600; }.field input, .field select { padding: 8px 9px 8px 9px; border: 1px solid var(--line); border-radius: 6px; font-size: 13px; background: var(--cream); color: var(--brown); min-width: 110px; }button.primary { background: var(--amber); color: rgb(255, 255, 255); border: none; padding: 9px 16px 9px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }button.primary:hover { opacity: 0.9; }button.danger { background: none; border: none; color: var(--red); cursor: pointer; font-size: 12px; font-weight: 600; }table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }th { text-align: left; padding: 8px 9px 8px 9px; background: var(--cream); border: 2px solid var(--line); font-size: 11px; text-transform: uppercase; color: var(--brown-soft); letter-spacing: 0.3px; }td { padding: 7px 9px 7px 9px; border: 1px solid var(--line); }tr:hover td { background: rgb(251, 243, 225); }.kode-badge { font: 700 11.5px monospace; background: var(--wheat); padding: 2px 6px 2px 6px; border-radius: 5px; }.tag { display: inline-block; padding: 2px 8px 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }.tag.premix { background: rgb(241, 225, 198); color: rgb(138, 90, 22); }.tag.bahan { background: rgb(220, 234, 226); color: var(--teal); }.tag.kardus { background: rgb(228, 220, 239); color: rgb(108, 74, 156); }.tag.masuk { background: rgb(220, 234, 226); color: var(--teal); }.tag.keluar { background: rgb(245, 218, 211); color: var(--red); }.sisa-ok { color: var(--teal); font-weight: 700; }.sisa-low { color: var(--red); font-weight: 700; }.selisih-badge { font-size: 12px; font-weight: 600; }
+.empty { padding: 18px; text-align: center; color: var(--brown-soft); font-size: 13px; }.note { font-size: 11.5px; color: var(--brown-soft); margin-top: 6px; }
+header .datatools { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+header .datatools button { background: rgb(255,255,255,0.12); color: var(--cream); border: 1px solid rgb(255,255,255,0.28); padding: 7px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+header .datatools button:hover { background: rgb(255,255,255,0.22); }
+header .datatools button:disabled { opacity: 0.5; cursor: not-allowed; }
+#db-status { font-size: 11.5px; color: var(--wheat); white-space: nowrap; }
+@media (max-width: 640px){ header { flex-wrap: wrap; } header .datatools { margin-left: 0; width: 100%; } header .datatools button { flex: 1; } }
+#import-status { font-size: 11.5px; color: var(--wheat); margin-left: 8px; }</style>
+</head>
+<body>
+
+<header>
+  <div class="icon">🍞</div>
+  <div>
+    <h1>Gudang Roti</h1>
+    <p>Kode · Masuk · Keluar · Arus (Sisa Stok) · Produksi · Packing</p>
+  </div>
+  <div class="datatools">
+    <span id="db-status" title="Status koneksi database">⏳ Menyambung...</span>
+    <button id="btn-refresh-db" type="button" title="Ambil data terbaru dari database">🔄 Refresh</button>
+    <button id="btn-export-excel" type="button" title="Simpan semua data jadi file Excel (cadangan)">⬇ Export Excel</button>
+    <button id="btn-import-excel" type="button" title="Masukkan data dari file Excel hasil export">⬆ Import Excel</button>
+    <input type="file" id="input-import-excel" accept=".xlsx,.xls" style="display:none;">
+    <span id="import-status"></span>
+  </div>
+</header>
+
+<nav id="nav"><button data-tab="menu" class="active">Menu</button><button data-tab="kode" class="">Kode</button><button data-tab="masuk" class="">Masuk</button><button data-tab="keluar" class="">Keluar</button><button data-tab="arus" class="">Arus</button><button data-tab="opname" class="">Opname</button><button data-tab="produksi" class="">Produksi</button><button data-tab="packing" class="">Packing</button><button data-tab="penjualan" class="">Penjualan</button><button data-tab="laporan" class="">Laporan</button></nav>
+<main id="main"><div class="empty">Memuat data...</div></main>
+
+<script>
+const KATEGORI = {
+  premix: {label:'Premix', hasHasil:true},
+  bahan: {label:'Bahan Baku', hasHasil:false},
+  kardus: {label:'Kardus', hasHasil:false}
+};
+const SUPPLIERS = ['Ronggolawe','Berkah','Jatimerak','CV Baru'];
+const CABANG = ['Tuban','Merakurak','Jatirogo','Palang'];
+const TUJUAN_PACKING = ['Stock Toko', ...CABANG];
+
+let items=[], trx=[], produksi=[], packing=[], penjualan=[], opname=[], retur=[], riwayatEdit=[];
+let activeTab='menu';
+// filter Masuk/Keluar
+let filterTrx = { masuk:{kategori:'', dari:'', sampai:''}, keluar:{kategori:'', dari:'', sampai:''} };
+// state edit inline (dataset+id yang lagi diedit)
+let editingRow = null; // {dataset:'trx'|'produksi'|'packing', id:'...'}
+
+// ============================================================
+// KONEKSI DATABASE (Supabase) — data tersimpan online, bisa
+// diakses & disinkronkan dari device manapun secara real-time
+// ============================================================
+const SUPABASE_URL = 'https://iqhozesxcwlsejnmrwey.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_doaiLiO_7KEk68e6zSIUdA_vm0LrFJ1';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const DATASETS_DB = ['items','trx','produksi','packing','penjualan','opname','retur','riwayatEdit'];
+let dbStatus = 'connecting'; // 'connecting' | 'online' | 'offline'
+
+// state pembangun resep (tab Kode)
+let resepBuilderItemId=null, resepBuilderQty='', tempResepVarian=[];
+// state form produksi manual (kalau premix belum punya resep tersimpan)
+let produksiSelectedItemId=null, produksiSelectedResepId=null, produksiManualRows=[];
+// state form retur
+let returJenis='premix';
+
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function rupiah(n){ return 'Rp'+Math.round(n||0).toLocaleString('id-ID'); }
+function today(){ return new Date().toISOString().slice(0,10); }
+function nextKode(kategori){
+  const pfx = {premix:'PMX', bahan:'BHN', kardus:'KRD'}[kategori];
+  const n = items.filter(i=>i.kategori===kategori).length + 1;
+  return pfx + String(n).padStart(3,'0');
+}
+
+async function loadAll(){
+  for(const k of DATASETS_DB){
+    try{
+      const { data, error } = await sb.from(k).select('data').order('created_at', {ascending:true});
+      if(error) throw error;
+      window[k+'__tmp'] = (data||[]).map(r=>r.data);
+      dbStatus = 'online';
+    }catch(e){
+      console.error('Gagal memuat', k, e);
+      window[k+'__tmp'] = window[k+'__tmp'] || [];
+      dbStatus = 'offline';
+    }
+  }
+  items=items__tmp; trx=trx__tmp; produksi=produksi__tmp; packing=packing__tmp; penjualan=penjualan__tmp; opname=opname__tmp; retur=retur__tmp; riwayatEdit=riwayatEdit__tmp;
+}
+async function save(key, val){
+  try{
+    // sinkron penuh: hapus semua baris tabel ini, lalu simpan ulang isi array saat ini
+    const { error: delErr } = await sb.from(key).delete().neq('id','__never_matches__');
+    if(delErr) throw delErr;
+    if(val.length>0){
+      const rows = val.map(rec=>({id: rec.id, data: rec}));
+      const { error: insErr } = await sb.from(key).insert(rows);
+      if(insErr) throw insErr;
+    }
+    dbStatus = 'online';
+    updateDbStatusBadge();
+  }catch(e){
+    console.error('Gagal menyimpan', key, e);
+    dbStatus = 'offline';
+    updateDbStatusBadge();
+    alert('Gagal menyimpan ke database online. Cek koneksi internet, lalu coba lagi. Perubahan barusan mungkin belum tersimpan.');
+  }
+}
+function updateDbStatusBadge(){
+  const el = document.getElementById('db-status');
+  if(!el) return;
+  if(dbStatus==='online'){ el.textContent='🟢 Online'; el.title='Tersambung ke database'; }
+  else if(dbStatus==='offline'){ el.textContent='🔴 Offline'; el.title='Gagal tersambung ke database — cek internet'; }
+  else { el.textContent='⏳ Menyambung...'; }
+}
+function subscribeRealtime(){
+  DATASETS_DB.forEach(k=>{
+    sb.channel('sync-'+k)
+      .on('postgres_changes', {event:'*', schema:'public', table:k}, async ()=>{
+        await loadAll();
+        updateDbStatusBadge();
+        const activeTag = document.activeElement ? document.activeElement.tagName : '';
+        if(activeTag!=='INPUT' && activeTag!=='SELECT' && activeTag!=='TEXTAREA'){
+          renderAll();
+        }
+      })
+      .subscribe();
+  });
+}
+
+function itemById(id){ return items.find(x=>x.id===id); }
+function stokItem(itemId){
+  let masuk=0, keluar=0;
+  trx.filter(t=>t.itemId===itemId).forEach(t=>{ if(t.tipe==='masuk') masuk+=t.qty; else keluar+=t.qty; });
+  return {masuk, keluar, sisa: masuk-keluar};
+}
+
+// -- varian roti (hasil produksi bisa banyak varian dari satu premix) --
+function semuaVarianNama(){
+  const set = new Set();
+  produksi.forEach(p=> (p.varianHasil||[]).forEach(v=> set.add(v.nama)));
+  return Array.from(set).sort();
+}
+function stokVarianGudang(nama){
+  const dihasilkan = produksi.reduce((s,p)=> s + (p.varianHasil||[]).filter(v=>v.nama===nama).reduce((ss,v)=>ss+v.jumlah,0), 0);
+  const dikemas = packing.reduce((s,p)=> s + (p.varian||[]).filter(v=>v.nama===nama).reduce((ss,v)=>ss+v.jumlah,0), 0);
+  return { dihasilkan, dikemas, sisa: dihasilkan - dikemas };
+}
+function stokVarianCabang(nama, cabang){
+  const dikirim = packing.filter(p=>p.cabang===cabang).reduce((s,p)=> s + (p.varian||[]).filter(v=>v.nama===nama).reduce((ss,v)=>ss+v.jumlah,0), 0);
+  const returPcs = retur.filter(r=>r.jenis==='roti' && r.varianNama===nama && r.cabang===cabang).reduce((s,r)=>s+(r.jumlah||0),0);
+  return { dikirim, returPcs, efektif: dikirim-returPcs };
+}
+function returTotalNilai(jenis, dari, sampai){
+  const inRange = (tgl)=> (!dari||tgl>=dari) && (!sampai||tgl<=sampai);
+  return retur.filter(r=>r.jenis===jenis && inRange(r.tanggal)).reduce((s,r)=>s+(r.nilai||0),0);
+}
+function returTotalJumlahRoti(dari, sampai){
+  const inRange = (tgl)=> (!dari||tgl>=dari) && (!sampai||tgl<=sampai);
+  return retur.filter(r=>r.jenis==='roti' && inRange(r.tanggal)).reduce((s,r)=>s+(r.jumlah||0),0);
+}
+
+function cekSelisihProduksi(inp){
+  const badge = document.querySelector(`[data-selisih-for="${CSS.escape(inp.dataset.nama)}"]`);
+  if(!badge) return;
+  const val = inp.value===''? NaN : parseFloat(inp.value);
+  if(isNaN(val)){ badge.textContent='-'; badge.className='selisih-badge'; return; }
+  const min = parseFloat(inp.dataset.min)||0;
+  const max = parseFloat(inp.dataset.max)||min;
+  if(val < min){
+    badge.textContent = '−'+(min-val).toLocaleString('id-ID')+' pcs (kurang dari standar)';
+    badge.className = 'selisih-badge sisa-low';
+  } else if(val > max){
+    badge.textContent = '+'+(val-max).toLocaleString('id-ID')+' pcs (lebih dari standar)';
+    badge.className = 'selisih-badge sisa-ok';
+  } else {
+    badge.textContent = 'Sesuai standar';
+    badge.className = 'selisih-badge sisa-ok';
+  }
+}
+
+async function tambahTrx(t){ trx.push({id:uid(), ...t}); await save('trx', trx); }
+
+// ============================================================
+// RIWAYAT EDIT — log siapa/kapan/apa yang diubah tiap kali data
+// hasil input (bukan baru ditambah) diedit lewat tombol "Edit"
+// ============================================================
+async function catatEdit(dataset, refId, labelData, before, after){
+  const perubahan = [];
+  for(const k in after){
+    if(k==='id') continue;
+    const a = before ? before[k] : undefined;
+    const b = after[k];
+    if(JSON.stringify(a)!==JSON.stringify(b)) perubahan.push(`${k}: "${a??'-'}" → "${b??'-'}"`);
+  }
+  if(perubahan.length===0) return;
+  riwayatEdit.push({ id:uid(), waktu:new Date().toISOString(), dataset, refId, labelData, perubahan });
+  await save('riwayatEdit', riwayatEdit);
+}
+function riwayatEditUntuk(dataset, refId){
+  return riwayatEdit.filter(r=>r.dataset===dataset && r.refId===refId).sort((a,b)=>b.waktu.localeCompare(a.waktu));
+}
+function renderRiwayatEditBox(dataset, refId){
+  const list = riwayatEditUntuk(dataset, refId);
+  if(list.length===0) return '';
+  const rows = list.map(r=>`<li>${new Date(r.waktu).toLocaleString('id-ID')} — ${r.perubahan.join('; ')}</li>`).join('');
+  return `<div class="note" style="margin-top:4px;"><b>Riwayat edit:</b><ul style="margin:4px 0 0 16px;padding:0;">${rows}</ul></div>`;
+}
+
+// ============================================================
+// EXPORT / IMPORT EXCEL
+// Tujuan: admin gudang input data di device dia lewat aplikasi
+// ini seperti biasa, lalu klik "Export Excel" -> dapat file
+// .xlsx berisi SEMUA data (items, trx, produksi, packing,
+// penjualan, opname, retur). File itu dikirim (WA/email) ke
+// device lain, lalu klik "Import Excel" -> data langsung masuk.
+// Kolom yang isinya objek/array (misal resepList, varianHasil)
+// otomatis disimpan sebagai teks JSON di dalam sel, dan saat
+// import teks JSON itu diuraikan balik jadi objek/array.
+// ============================================================
+const DATASETS_EXCEL = DATASETS_DB;
+
+function flattenRecordForExcel(rec){
+  const out = {};
+  for(const k in rec){
+    const v = rec[k];
+    out[k] = (v!==null && typeof v==='object') ? JSON.stringify(v) : v;
+  }
+  return out;
+}
+function unflattenRecordFromExcel(row){
+  const out = {};
+  for(const k in row){
+    let v = row[k];
+    if(typeof v==='string' && (v.startsWith('[')||v.startsWith('{'))){
+      try{ v = JSON.parse(v); }catch(e){ /* biarkan sebagai teks kalau bukan JSON valid */ }
+    }
+    if(v===undefined) v='';
+    out[k]=v;
+  }
+  return out;
+}
+
+function exportExcel(){
+  const dataMap = {items, trx, produksi, packing, penjualan, opname, retur, riwayatEdit};
+  const wb = XLSX.utils.book_new();
+  DATASETS_EXCEL.forEach(name=>{
+    const arr = dataMap[name] || [];
+    const flat = arr.map(flattenRecordForExcel);
+    const ws = XLSX.utils.json_to_sheet(flat.length ? flat : [{}]);
+    XLSX.utils.book_append_sheet(wb, ws, name);
+  });
+  const namaFile = `gudang-roti-${today()}.xlsx`;
+  XLSX.writeFile(wb, namaFile);
+}
+
+function importExcel(file){
+  const status = document.getElementById('import-status');
+  const reader = new FileReader();
+  reader.onload = async (e)=>{
+    try{
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const dataMap = {};
+      DATASETS_EXCEL.forEach(name=>{
+        if(!wb.SheetNames.includes(name)) return;
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[name], {defval:''});
+        const parsed = rows
+          .map(unflattenRecordFromExcel)
+          .filter(r=> r.id); // baris kosong dari sheet template dibuang
+        dataMap[name] = parsed;
+      });
+      if(Object.keys(dataMap).length===0){
+        if(status) status.textContent = 'File tidak dikenali (bukan hasil Export Excel dari aplikasi ini).';
+        return;
+      }
+      if(!confirm('Data yang ada sekarang akan DIGANTI dengan isi file ini. Lanjutkan?')) return;
+      for(const name of DATASETS_EXCEL){
+        if(!(name in dataMap)) continue;
+        window[name].length = 0;
+        window[name].push(...dataMap[name]);
+        await save(name, window[name]);
+      }
+      items=window.items; trx=window.trx; produksi=window.produksi; packing=window.packing;
+      penjualan=window.penjualan; opname=window.opname; retur=window.retur; riwayatEdit=window.riwayatEdit||[];
+      if(status) status.textContent = 'Data berhasil diimpor.';
+      renderAll();
+    }catch(err){
+      console.error(err);
+      if(status) status.textContent = 'Gagal membaca file Excel.';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function lastDayOfMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
+function fmtD(d){ return d.toISOString().slice(0,10); }
+function jadwalOpnameBerikutnya(){
+  const now = new Date(); now.setHours(0,0,0,0);
+  const y = now.getFullYear(), m = now.getMonth(), tgl = now.getDate();
+
+  let d20 = new Date(y,m,20);
+  if(tgl>20) d20 = new Date(y,m+1,20);
+
+  const lastThis = lastDayOfMonth(y,m);
+  let dAkhir = new Date(y,m,lastThis);
+  if(tgl>=lastThis) dAkhir = new Date(y,m+1, lastDayOfMonth(y,m+1));
+
+  const mingguanList = opname.filter(o=>o.jenis==='Mingguan').sort((a,b)=>b.tanggal.localeCompare(a.tanggal));
+  let dMinggu;
+  if(mingguanList.length>0){
+    const last = new Date(mingguanList[0].tanggal);
+    dMinggu = new Date(last.getTime());
+    dMinggu.setDate(dMinggu.getDate()+7);
+    while(dMinggu < now){ dMinggu.setDate(dMinggu.getDate()+7); }
+  } else {
+    dMinggu = new Date(now.getTime()); dMinggu.setDate(dMinggu.getDate()+7);
+  }
+
+  return { mingguan: fmtD(dMinggu), tgl20: fmtD(d20), akhirBulan: fmtD(dAkhir) };
+}
+function jenisOtomatis(tanggalStr){
+  const d = new Date(tanggalStr);
+  const y=d.getFullYear(), m=d.getMonth(), tgl=d.getDate();
+  if(tgl===lastDayOfMonth(y,m)) return 'Akhir Bulan';
+  if(tgl===20) return 'Tanggal 20';
+  return 'Mingguan';
+}
+
+const TABS = [
+  {id:'menu', label:'Menu'},
+  {id:'kode', label:'Kode'},
+  {id:'masuk', label:'Masuk', badge:()=>trx.filter(t=>t.tipe==='masuk').length},
+  {id:'keluar', label:'Keluar'},
+  {id:'arus', label:'Arus'},
+  {id:'opname', label:'Opname', badge:()=>opname.length},
+  {id:'produksi', label:'Produksi', badge:()=>produksi.length},
+  {id:'packing', label:'Packing', badge:()=>packing.length},
+  {id:'retur', label:'Retur', badge:()=>retur.length},
+  {id:'penjualan', label:'Penjualan'},
+  {id:'laporan', label:'Laporan'},
+  {id:'laporansore', label:'Lapor Sore'}
+];
+
+function renderNav(){
+  const nav = document.getElementById('nav');
+  nav.innerHTML = TABS.map(t=>{
+    const b = t.badge? t.badge():null;
+    return `<button data-tab="${t.id}" class="${t.id===activeTab?'active':''}">${t.label}${b?`<span class="badge">${b}</span>`:''}</button>`;
+  }).join('');
+  nav.querySelectorAll('button').forEach(b=> b.onclick=()=>{ activeTab=b.dataset.tab; renderAll(); });
+}
+
+function renderAll(){
+  renderNav();
+  const main = document.getElementById('main');
+  const views = {menu:viewMenu, kode:viewKode, masuk:()=>viewTransaksi('masuk'), keluar:()=>viewTransaksi('keluar'),
+    arus:viewArus, opname:viewOpname, produksi:viewProduksi, packing:viewPacking, retur:viewRetur, penjualan:viewPenjualan, laporan:viewLaporan, laporansore:viewLaporanSore};
+  main.innerHTML = views[activeTab]();
+  attachHandlers();
+}
+
+function viewMenu(){
+  const now = new Date();
+  const jadwal = jadwalOpnameBerikutnya();
+  const bulanIni = now.toISOString().slice(0,7);
+  const trxBulanIni = trx.filter(t=>t.tanggal.slice(0,7)===bulanIni);
+  const totalMasukUang = trxBulanIni.filter(t=>t.tipe==='masuk').reduce((s,t)=>{ const it=itemById(t.itemId); return s+(it? it.harga*t.qty:0); },0);
+  const returPremixBulanIni = returTotalNilai('premix', bulanIni+'-01', bulanIni+'-31');
+  const returRotiBulanIni = returTotalNilai('roti', bulanIni+'-01', bulanIni+'-31');
+  const totalKeluarUang = totalMasukUang - returPremixBulanIni;
+  const omzetBulanIni = penjualan.filter(p=>p.tanggal.slice(0,7)===bulanIni).reduce((s,p)=>s+p.omzet,0);
+  const labaRugi = omzetBulanIni - totalKeluarUang - returRotiBulanIni;
+  const produksiBulanIni = produksi.filter(p=>p.tanggal.slice(0,7)===bulanIni).reduce((s,p)=>s+(p.totalHasil||0),0);
+  const packingBulanIni = packing.filter(p=>p.tanggal.slice(0,7)===bulanIni).reduce((s,p)=>s+(p.varian||[]).reduce((ss,v)=>ss+v.jumlah,0),0);
+
+  const rows = Object.keys(KATEGORI).map(k=>{
+    const list = items.filter(i=>i.kategori===k);
+    let nilaiSisa=0, adaMinim=0;
+    list.forEach(it=>{ const s=stokItem(it.id); nilaiSisa+=s.sisa*it.harga; if(s.sisa<0) adaMinim++; });
+    return `<tr><td><span class="tag ${k}">${KATEGORI[k].label}</span></td><td>${list.length} jenis</td><td>${rupiah(nilaiSisa)}</td><td>${adaMinim>0?`<span class="sisa-low">${adaMinim} minus stok</span>`:'-'}</td></tr>`;
+  }).join('');
+
+  return `
+  <div class="card">
+    <h2>Ringkasan Bulan Ini (${bulanIni})</h2>
+    <div class="grid">
+      <div class="stat"><div class="label">Uang Keluar (Order neto retur)</div><div class="value">${rupiah(totalKeluarUang)}</div></div>
+      <div class="stat"><div class="label">Omzet Penjualan</div><div class="value">${rupiah(omzetBulanIni)}</div></div>
+      <div class="stat ${labaRugi>=0?'pos':'neg'}"><div class="label">${labaRugi>=0?'Laba':'Rugi'}</div><div class="value">${rupiah(Math.abs(labaRugi))}</div></div>
+      <div class="stat"><div class="label">Hasil Produksi</div><div class="value">${produksiBulanIni.toLocaleString('id-ID')} pcs</div></div>
+      <div class="stat"><div class="label">Hasil Packing</div><div class="value">${packingBulanIni.toLocaleString('id-ID')} pcs</div></div>
+      <div class="stat ${returPremixBulanIni+returRotiBulanIni>0?'neg':''}"><div class="label">Total Retur Bulan Ini</div><div class="value">${rupiah(returPremixBulanIni+returRotiBulanIni)}</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Nilai Stok per Kategori</h2>
+    <table><thead><tr><th>Kategori</th><th>Jumlah Barang</th><th>Nilai Sisa Stok</th><th>Peringatan</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="4" class="empty">Belum ada barang</td></tr>'}</tbody></table>
+  </div>
+  <div class="card">
+    <h2>Jadwal Stock Opname</h2>
+    <div class="sub">Opname rutin: mingguan, tanggal 20, dan akhir bulan</div>
+    <div class="grid">
+      <div class="stat"><div class="label">Opname Mingguan Berikutnya</div><div class="value">${jadwal.mingguan}</div></div>
+      <div class="stat"><div class="label">Opname Tanggal 20 Berikutnya</div><div class="value">${jadwal.tgl20}</div></div>
+      <div class="stat"><div class="label">Opname Akhir Bulan Berikutnya</div><div class="value">${jadwal.akhirBulan}</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Alur Kerja</h2>
+    <div class="sub">1) <b>Kode</b> daftarkan barang + resep varian roti (khusus Premix) → 2) <b>Masuk</b> catat pembelian → 3) <b>Produksi</b> pakai premix jadi beberapa varian roti sekaligus → 4) <b>Packing</b> pakai kardus untuk kemas roti per cabang → 5) <b>Retur</b> catat premix/roti yang dikembalikan → 6) <b>Penjualan</b> catat omzet → 7) Cek <b>Arus</b> untuk sisa stok dan <b>Laporan</b> untuk laba rugi.</div>
+  </div>
+  `;
+}
+
+function viewKode(){
+  const rows = items.map((it,idx)=>{
+    const s = stokItem(it.id);
+    const jmlResep = it.kategori==='premix' ? (it.resepList||[]).length : null;
+    return `<tr>
+      <td>${idx+1}</td>
+      <td><span class="kode-badge">${it.kode}</span></td>
+      <td><span class="tag ${it.kategori}">${KATEGORI[it.kategori].label}</span></td>
+      <td>${it.nama}</td>
+      <td>${it.satuan}</td>
+      <td>${rupiah(it.harga)}</td>
+      <td>${it.kategori==='premix' ? (jmlResep>0 ? jmlResep+' resep tersimpan' : '<span class="sisa-low">belum ada resep</span>') : '-'}</td>
+      <td class="${s.sisa<0?'sisa-low':'sisa-ok'}">${s.sisa.toLocaleString('id-ID')} ${it.satuan}</td>
+      <td>${it.kategori==='bahan' ? `<button class="danger" style="color:var(--blue)" data-goto-keluar="1">+ Stok Keluar</button> ` : ''}<button class="danger" data-del-item="${it.id}">Hapus</button></td>
+    </tr>`;
+  }).join('');
+
+  const premixItems = items.filter(i=>i.kategori==='premix');
+  const premixOptions = premixItems.map(it=>`<option value="${it.id}" ${it.id===resepBuilderItemId?'selected':''}>${it.kode} - ${it.nama}</option>`).join('');
+  const selectedItem = resepBuilderItemId ? itemById(resepBuilderItemId) : null;
+
+  let resepBuilderHtml = '';
+  if(selectedItem){
+    const profilRows = (selectedItem.resepList||[]).map(profil=>{
+      const varianRows = profil.varian.map(v=>`<li>${v.nama}: ${v.min}${v.max&&v.max!==v.min? '-'+v.max:''} pcs</li>`).join('');
+      return `<div class="card" style="background:var(--cream);margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <b>${profil.resepQty} Resep (r)</b>
+          <button class="danger" data-del-resep="${profil.id}" data-item="${selectedItem.id}">Hapus Resep Ini</button>
+        </div>
+        <ul style="margin:6px 0 0 18px;padding:0;font-size:12.5px;">${varianRows || '<li class="empty">Belum ada varian</li>'}</ul>
+      </div>`;
+    }).join('');
+
+    const tempRows = tempResepVarian.map((v,idx)=>`<tr>
+      <td>${v.nama}</td><td>${v.min}</td><td>${v.max}</td>
+      <td><button class="danger" data-del-temp-varian="${idx}">Hapus</button></td>
+    </tr>`).join('');
+
+    resepBuilderHtml = `
+    <div class="card">
+      <h2>Kelola Resep Varian — ${selectedItem.nama}</h2>
+      <div class="sub">Contoh: Premix Chiffon 2 Resep → Chiffon Keju, Chiffon Pandan, Chiffon Tabur (kecil 28-30, sedang 24-26, besar 20-22 pcs). Simpan tiap ukuran resep (1r/2r/3r/5r dst) sebagai satu profil dengan daftar variannya.</div>
+      <h3 style="font-size:13px;margin:10px 0 4px 0;">Resep Tersimpan</h3>
+      ${profilRows || '<div class="empty">Belum ada resep untuk barang ini</div>'}
+      <h3 style="font-size:13px;margin:14px 0 4px 0;">Tambah Resep Baru</h3>
+      <form class="inline" id="form-resep-qty" style="margin-bottom:8px;">
+        <div class="field"><label>Jumlah Resep (r)</label><input type="number" step="any" min="0" id="resep-qty-input" value="${resepBuilderQty}" placeholder="cth: 2" required></div>
+      </form>
+      <div class="note">Tambahkan tiap varian roti yang dihasilkan dari resep ini beserta rentang hasilnya (pcs), lalu simpan resepnya.</div>
+      <form class="inline" id="form-temp-varian" style="margin:8px 0;">
+        <div class="field"><label>Nama Varian</label><input id="temp-varian-nama" placeholder="cth: Chiffon Keju Kecil" required></div>
+        <div class="field"><label>Hasil Minimal (pcs)</label><input id="temp-varian-min" type="number" step="any" min="0" required></div>
+        <div class="field"><label>Hasil Maksimal (pcs)</label><input id="temp-varian-max" type="number" step="any" min="0" placeholder="samakan jika pasti"></div>
+        <button class="primary" type="submit">+ Tambah Baris Varian</button>
+      </form>
+      ${tempResepVarian.length>0 ? `<table><thead><tr><th>Varian</th><th>Min</th><th>Max</th><th></th></tr></thead><tbody>${tempRows}</tbody></table>` : ''}
+      <div style="margin-top:10px;">
+        <button class="primary" id="btn-simpan-resep" ${tempResepVarian.length===0?'disabled':''}>Simpan Resep Ini</button>
+        <button class="danger" id="btn-batal-resep" type="button">Batal</button>
+      </div>
+    </div>`;
+  }
+
+  return `
+  <div class="card">
+    <h2>Tambah Kode Barang</h2>
+    <div class="sub">Kode dibuat otomatis (PMX/BHN/KRD + nomor urut)</div>
+    <form class="inline" id="form-item">
+      <div class="field"><label>Kategori</label>
+        <select name="kategori" id="item-kategori">
+          <option value="premix">Premix</option>
+          <option value="bahan">Bahan Baku</option>
+          <option value="kardus">Kardus</option>
+        </select>
+      </div>
+      <div class="field"><label>Nama Barang</label><input name="nama" required placeholder="cth: Premix Chiffon"></div>
+      <div class="field"><label>Satuan</label><input name="satuan" required placeholder="kg / resep / lusin"></div>
+      <div class="field"><label>Harga per Satuan (Rp)</label><input name="harga" type="number" required min="0"></div>
+      <button class="primary" type="submit">Tambah</button>
+    </form>
+    <div class="note">Untuk Premix, atur resep varian rotinya di bagian bawah setelah barang ditambahkan (klik barangnya di kolom "Pilih Premix untuk Resep").</div>
+  </div>
+  <div class="card">
+    <h2>Daftar Kode Barang (${items.length})</h2>
+    <table><thead><tr><th>No</th><th>Kode</th><th>Kategori</th><th>Nama</th><th>Satuan</th><th>Harga</th><th>Resep Varian</th><th>Sisa Stok</th><th></th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="9" class="empty">Belum ada barang, tambahkan di atas</td></tr>'}</tbody></table>
+  </div>
+  <div class="card">
+    <h2>Pilih Premix untuk Resep</h2>
+    <div class="sub">Pilih premix untuk melihat/menambah resep varian rotinya</div>
+    ${premixItems.length===0? '<div class="empty">Tambahkan barang kategori Premix dulu</div>' : `
+    <form class="inline"><div class="field" style="min-width:260px;"><label>Premix</label><select id="resep-item-select"><option value="">-- pilih --</option>${premixOptions}</select></div></form>`}
+  </div>
+  ${resepBuilderHtml}
+  `;
+}
+
+function viewTransaksi(tipe){
+  const label = tipe==='masuk' ? 'Stok Masuk (Pembelian)' : 'Stok Keluar (Pemakaian Manual)';
+  const itemsUntukForm = tipe==='keluar' ? items.filter(i=>i.kategori==='bahan') : items;
+  const options = itemsUntukForm.map(it=>`<option value="${it.id}">${it.kode} - ${it.nama} (${it.satuan})</option>`).join('');
+  const supplierOptions = SUPPLIERS.map(s=>`<option value="${s}">${s}</option>`).join('');
+
+  const f = filterTrx[tipe];
+  const kategoriOptions = Object.keys(KATEGORI).map(k=>`<option value="${k}" ${f.kategori===k?'selected':''}>${KATEGORI[k].label}</option>`).join('');
+
+  let list = trx.filter(t=>t.tipe===tipe);
+  if(f.kategori) list = list.filter(t=>{ const it=itemById(t.itemId); return it && it.kategori===f.kategori; });
+  if(f.dari) list = list.filter(t=>t.tanggal>=f.dari);
+  if(f.sampai) list = list.filter(t=>t.tanggal<=f.sampai);
+  list = list.slice().sort((a,b)=>b.tanggal.localeCompare(a.tanggal));
+
+  const rows = list.map((t,idx)=>{
+    const it = itemById(t.itemId); if(!it) return '';
+    const nilai = it.harga*t.qty;
+    const isEditing = editingRow && editingRow.dataset==='trx' && editingRow.id===t.id;
+    if(isEditing){
+      return `<tr data-edit-row="trx-${t.id}">
+        <td>${idx+1}</td>
+        <td><span class="kode-badge">${it.kode}</span></td>
+        <td>${it.nama}</td>
+        ${tipe==='masuk' ? `<td><select class="edit-supplier">${SUPPLIERS.map(s=>`<option ${s===t.supplier?'selected':''}>${s}</option>`).join('')}</select></td>` : ''}
+        <td><input type="number" step="any" min="0" class="edit-qty" value="${t.qty}" style="width:90px;"></td>
+        <td>${rupiah(nilai)}</td>
+        <td><input type="text" class="edit-ket" value="${t.ket||''}" style="width:120px;"></td>
+        <td><input type="date" class="edit-tanggal" value="${t.tanggal}" style="width:130px;"></td>
+        <td>
+          <button class="primary" data-save-edit-trx="${t.id}" style="padding:5px 10px;">Simpan</button>
+          <button class="danger" data-batal-edit>Batal</button>
+        </td>
+      </tr>`;
+    }
+    return `<tr>
+      <td>${idx+1}</td>
+      <td><span class="kode-badge">${it.kode}</span></td>
+      <td>${it.nama}</td>
+      ${tipe==='masuk' ? `<td>${t.supplier||'-'}</td>` : ''}
+      <td>${t.qty.toLocaleString('id-ID')} ${it.satuan}</td>
+      <td>${rupiah(nilai)}</td>
+      <td>${t.ket||'-'}</td>
+      <td>${t.tanggal}</td>
+      <td>
+        <button class="danger" style="color:var(--blue)" data-edit-trx="${t.id}">Edit</button>
+        <button class="danger" data-del-trx="${t.id}">Hapus</button>
+      </td>
+    </tr>${renderRiwayatEditBoxRow(riwayatEditUntuk('trx', t.id))}`;
+  }).join('');
+
+  return `
+  <div class="card">
+    <h2>${label}</h2>
+    ${tipe==='keluar' ? `<div class="note">Premix keluar dicatat lewat tab <b>Produksi</b>, kardus keluar dicatat lewat tab <b>Packing</b>, dan retur dicatat lewat tab <b>Retur</b> — supaya stoknya tidak berkurang dobel. Tab ini khusus untuk pemakaian Bahan Baku di luar produksi (misal rusak/hilang/dipakai lain).</div>` : ''}
+    ${itemsUntukForm.length===0 ? `<div class="empty">${tipe==='keluar' ? 'Belum ada Bahan Baku terdaftar di tab Kode' : 'Tambahkan barang dulu di tab Kode'}</div>` : `
+    <form class="inline" id="form-trx" data-tipe="${tipe}" style="margin-top:10px;">
+      <div class="field"><label>Tanggal</label><input name="tanggal" type="date" value="${today()}" required></div>
+      <div class="field"><label>Barang</label><select name="itemId" required>${options}</select></div>
+      ${tipe==='masuk' ? `<div class="field"><label>CV / Supplier</label><select name="supplier" required>${supplierOptions}</select></div>` : ''}
+      <div class="field"><label>Jumlah</label><input name="qty" type="number" step="any" min="0" required></div>
+      <div class="field"><label>Keterangan</label><input name="ket" placeholder="opsional"></div>
+      <button class="primary" type="submit">Simpan</button>
+    </form>`}
+  </div>
+  <div class="card">
+    <h2>Filter Riwayat</h2>
+    <form class="inline" id="form-filter-trx" data-tipe="${tipe}">
+      <div class="field"><label>Kategori</label><select name="kategori"><option value="">Semua</option>${kategoriOptions}</select></div>
+      <div class="field"><label>Dari Tanggal</label><input type="date" name="dari" value="${f.dari}"></div>
+      <div class="field"><label>Sampai Tanggal</label><input type="date" name="sampai" value="${f.sampai}"></div>
+      <button class="primary" type="submit">Terapkan Filter</button>
+      <button class="danger" type="button" id="btn-reset-filter-trx">Reset</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Riwayat ${label} (${list.length}${list.length!==trx.filter(t=>t.tipe===tipe).length ? ' dari '+trx.filter(t=>t.tipe===tipe).length : ''})</h2>
+    <table><thead><tr><th>No</th><th>Kode</th><th>Barang</th>${tipe==='masuk'?'<th>CV/Supplier</th>':''}<th>Jumlah</th><th>Nilai</th><th>Ket</th><th>Tanggal</th><th></th></tr></thead>
+    <tbody>${rows || `<tr><td colspan="${tipe==='masuk'?9:8}" class="empty">Tidak ada transaksi sesuai filter</td></tr>`}</tbody></table>
+  </div>
+  `;
+}
+function renderRiwayatEditBoxRow(list){
+  if(!list || list.length===0) return '';
+  const rows = list.map(r=>`<li>${new Date(r.waktu).toLocaleString('id-ID')} — ${r.perubahan.join('; ')}</li>`).join('');
+  return `<tr><td colspan="9"><div class="note"><b>Riwayat edit:</b><ul style="margin:4px 0 0 16px;padding:0;">${rows}</ul></div></td></tr>`;
+}
+
+function viewArus(){
+  const varianNama = semuaVarianNama();
+  const rotiRows = varianNama.map(nama=>{
+    const s = stokVarianGudang(nama);
+    return `<tr>
+      <td>${nama}</td>
+      <td>${s.dihasilkan.toLocaleString('id-ID')} pcs</td>
+      <td>${s.dikemas.toLocaleString('id-ID')} pcs</td>
+      <td class="${s.sisa<0?'sisa-low':'sisa-ok'}">${s.sisa.toLocaleString('id-ID')} pcs</td>
+    </tr>`;
+  }).join('');
+
+  const cabangHeader = TUJUAN_PACKING.map(c=>`<th>${c}</th>`).join('');
+  const cabangRows = varianNama.map(nama=>{
+    const cells = TUJUAN_PACKING.map(c=>{
+      const s = stokVarianCabang(nama, c);
+      return `<td>${s.efektif.toLocaleString('id-ID')}${s.returPcs>0?` <span class="sisa-low">(-${s.returPcs} retur)</span>`:''}</td>`;
+    }).join('');
+    return `<tr><td>${nama}</td>${cells}</tr>`;
+  }).join('');
+
+  const rows = items.map((it,idx)=>{
+    const s = stokItem(it.id);
+    const nilaiSisa = s.sisa*it.harga;
+    return `<tr>
+      <td>${idx+1}</td>
+      <td><span class="kode-badge">${it.kode}</span></td>
+      <td><span class="tag ${it.kategori}">${KATEGORI[it.kategori].label}</span></td>
+      <td>${it.nama}</td>
+      <td>${s.masuk.toLocaleString('id-ID')} ${it.satuan}</td>
+      <td>${s.keluar.toLocaleString('id-ID')} ${it.satuan}</td>
+      <td class="${s.sisa<0?'sisa-low':'sisa-ok'}">${s.sisa.toLocaleString('id-ID')} ${it.satuan}</td>
+      <td>${rupiah(nilaiSisa)}</td>
+    </tr>`;
+  }).join('');
+
+  const totalNilaiSisa = items.reduce((sum,it)=> sum + stokItem(it.id).sisa*it.harga, 0);
+  const minus = items.filter(it=>stokItem(it.id).sisa<0).length;
+
+  return `
+  <div class="card">
+    <h2>Stok Roti Jadi di Gudang (Belum Dikemas)</h2>
+    <div class="sub">Hasil Produksi dikurangi yang sudah dikemas per varian — bukan bahan baku, tapi produk jadi. Satu premix bisa menghasilkan beberapa varian sekaligus.</div>
+    <table><thead><tr><th>Varian Roti</th><th>Total Dihasilkan</th><th>Sudah Dikemas</th><th>Sisa Belum Dikemas</th></tr></thead>
+    <tbody>${rotiRows || '<tr><td colspan="4" class="empty">Belum ada produksi</td></tr>'}</tbody></table>
+  </div>
+  <div class="card">
+    <h2>Stok Roti Terkirim per Cabang / Stock Toko (setelah Retur)</h2>
+    <div class="sub">Jumlah yang sudah dipacking ke tiap cabang atau Stock Toko, dikurangi retur roti dari tujuan tsb</div>
+    <table><thead><tr><th>Varian Roti</th>${cabangHeader}</tr></thead>
+    <tbody>${cabangRows || `<tr><td colspan="${TUJUAN_PACKING.length+1}" class="empty">Belum ada packing</td></tr>`}</tbody></table>
+  </div>
+  <div class="card">
+    <h2>Arus Stok — Total Masuk, Keluar &amp; Sisa per Barang</h2>
+    <div class="sub">Ini kartu stok otomatis: Sisa Stok = Total Masuk − Total Keluar (retur premix sudah ikut mengurangi lewat transaksi keluar)</div>
+    <div class="grid">
+      <div class="stat"><div class="label">Total Nilai Sisa Stok</div><div class="value">${rupiah(totalNilaiSisa)}</div></div>
+      <div class="stat ${minus>0?'neg':'pos'}"><div class="label">Barang Minus Stok</div><div class="value">${minus}</div></div>
+    </div>
+    <table><thead><tr><th>No</th><th>Kode</th><th>Kategori</th><th>Nama</th><th>Total Masuk</th><th>Total Keluar</th><th>Sisa Stok</th><th>Nilai Sisa</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="8" class="empty">Belum ada barang</td></tr>'}</tbody></table>
+  </div>
+  `;
+}
+
+function viewOpname(){
+  const jadwal = jadwalOpnameBerikutnya();
+  const itemRows = items.map((it,idx)=>{
+    const s = stokItem(it.id).sisa;
+    return `<tr>
+      <td>${idx+1}</td>
+      <td><span class="kode-badge">${it.kode}</span></td>
+      <td>${it.nama}</td>
+      <td>${s.toLocaleString('id-ID')} ${it.satuan}</td>
+      <td><input type="number" step="any" class="opname-fisik" data-item="${it.id}" data-satuan="${it.satuan}" data-sistem="${s}" placeholder="${s}"></td>
+    </tr>`;
+  }).join('');
+
+  const histRows = opname.slice().sort((a,b)=>b.tanggal.localeCompare(a.tanggal)).map((o,idx)=>{
+    const totalSelisihNilai = o.entries.reduce((s,e)=>{ const it=itemById(e.itemId); return s + (it? e.selisih*it.harga : 0); },0);
+    return `<tr>
+      <td>${idx+1}</td>
+      <td>${o.tanggal}</td>
+      <td>${o.jenis}</td>
+      <td>${o.entries.filter(e=>e.selisih!==0).length} dari ${o.entries.length} beda</td>
+      <td class="${totalSelisihNilai<0?'sisa-low':'sisa-ok'}">${rupiah(totalSelisihNilai)}</td>
+      <td>${o.diterapkan ? 'Sudah disesuaikan' : `<button class="danger" style="color:var(--teal)" data-terapkan-opname="${o.id}">Sesuaikan Stok</button>`}</td>
+      <td><button class="danger" data-del-opname="${o.id}">Hapus</button></td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div class="card">
+    <h2>Jadwal Opname</h2>
+    <div class="grid">
+      <div class="stat"><div class="label">Mingguan Berikutnya</div><div class="value">${jadwal.mingguan}</div></div>
+      <div class="stat"><div class="label">Tanggal 20 Berikutnya</div><div class="value">${jadwal.tgl20}</div></div>
+      <div class="stat"><div class="label">Akhir Bulan Berikutnya</div><div class="value">${jadwal.akhirBulan}</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Input Stock Opname</h2>
+    <div class="sub">Isi stok fisik hasil hitung langsung di gudang. Kosongkan kalau sama dengan stok sistem.</div>
+    ${items.length===0 ? '<div class="empty">Tambahkan barang dulu di tab Kode</div>' : `
+    <form id="form-opname">
+      <div class="inline" style="margin-bottom:10px;">
+        <div class="field"><label>Tanggal Opname</label><input type="date" id="opname-tanggal" value="${today()}" required></div>
+        <div class="field"><label>Jenis</label>
+          <select id="opname-jenis">
+            <option value="Mingguan">Mingguan</option>
+            <option value="Tanggal 20">Tanggal 20</option>
+            <option value="Akhir Bulan">Akhir Bulan</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div class="field"><label>Catatan</label><input type="text" id="opname-catatan" placeholder="opsional"></div>
+      </div>
+      <table><thead><tr><th>No</th><th>Kode</th><th>Barang</th><th>Stok Sistem</th><th>Stok Fisik (hasil hitung)</th></tr></thead>
+      <tbody>${itemRows}</tbody></table>
+      <div style="margin-top:12px;"><button class="primary" type="submit">Simpan Opname</button></div>
+    </form>`}
+  </div>
+  <div class="card">
+    <h2>Riwayat Opname (${opname.length})</h2>
+    <table><thead><tr><th>No</th><th>Tanggal</th><th>Jenis</th><th>Barang Beda</th><th>Nilai Selisih</th><th>Penyesuaian</th><th></th></tr></thead>
+    <tbody>${histRows || '<tr><td colspan="7" class="empty">Belum ada opname</td></tr>'}</tbody></table>
+  </div>
+  `;
+}
+
+function standarProfilTotal(profil){
+  return (profil.varian||[]).reduce((s,v)=>{
+    const max = (v.max!=null && v.max!=='') ? v.max : v.min;
+    return s + (Number(v.min)+Number(max))/2;
+  }, 0);
+}
+function viewProduksi(){
+  const premixItems = items.filter(i=>i.kategori==='premix');
+  const options = premixItems.map(it=>`<option value="${it.id}" ${it.id===produksiSelectedItemId?'selected':''}>${it.kode} - ${it.nama}</option>`).join('');
+  const rows = produksi.slice().sort((a,b)=>b.tanggal.localeCompare(a.tanggal)).map((p,idx)=>{
+    const it = itemById(p.premixItemId);
+    const rincian = (p.varianHasil||[]).map(v=>{
+      let tanda = '';
+      if(v.min!=null && v.max!=null && (v.min>0 || v.max>0)){
+        if(v.jumlah < v.min) tanda = ` <span class="sisa-low">(−${(v.min-v.jumlah).toLocaleString('id-ID')})</span>`;
+        else if(v.jumlah > v.max) tanda = ` <span class="sisa-ok">(+${(v.jumlah-v.max).toLocaleString('id-ID')})</span>`;
+      }
+      return `${v.nama}: ${v.jumlah.toLocaleString('id-ID')} pcs${tanda}`;
+    }).join(', ');
+    const standarJadi = p.standarJadi!=null ? p.standarJadi : null;
+    const selisihTotal = standarJadi!=null ? (p.totalHasil||0)-standarJadi : null;
+    const premixSeharusnya = p.premixSeharusnya!=null ? p.premixSeharusnya : null;
+    const isEditing = editingRow && editingRow.dataset==='produksi' && editingRow.id===p.id;
+    if(isEditing){
+      return `<tr data-edit-row="produksi-${p.id}">
+        <td>${idx+1}</td>
+        <td>${it? `<span class="kode-badge">${it.kode}</span> ${it.nama}` : '-'}</td>
+        <td><input type="number" step="any" min="0" class="edit-qty" value="${p.qtyPremix||0}" style="width:90px;"></td>
+        <td>${rincian || '-'}</td>
+        <td>${(p.totalHasil||0).toLocaleString('id-ID')} pcs</td>
+        <td>${standarJadi!=null? standarJadi.toLocaleString('id-ID',{maximumFractionDigits:1}):'-'}</td>
+        <td>${selisihTotal!=null? `<span class="${selisihTotal<0?'sisa-low':'sisa-ok'}">${selisihTotal>0?'+':''}${selisihTotal.toLocaleString('id-ID',{maximumFractionDigits:1})}</span>`:'-'}</td>
+        <td>${premixSeharusnya!=null? premixSeharusnya.toLocaleString('id-ID',{maximumFractionDigits:2}):'-'}</td>
+        <td><input type="text" class="edit-ket" value="${p.ket||''}" style="width:110px;"></td>
+        <td><input type="date" class="edit-tanggal" value="${p.tanggal}" style="width:130px;"></td>
+        <td>
+          <button class="primary" data-save-edit-produksi="${p.id}" style="padding:5px 10px;">Simpan</button>
+          <button class="danger" data-batal-edit>Batal</button>
+        </td>
+      </tr>`;
+    }
+    return `<tr>
+      <td>${idx+1}</td>
+      <td>${it? `<span class="kode-badge">${it.kode}</span> ${it.nama}` : '-'}</td>
+      <td>${(p.qtyPremix||0).toLocaleString('id-ID')} ${it?it.satuan:''}</td>
+      <td>${rincian || '-'}</td>
+      <td>${(p.totalHasil||0).toLocaleString('id-ID')} pcs</td>
+      <td>${standarJadi!=null? standarJadi.toLocaleString('id-ID',{maximumFractionDigits:1})+' pcs':'-'}</td>
+      <td>${selisihTotal!=null? `<span class="${selisihTotal<0?'sisa-low':'sisa-ok'}">${selisihTotal>0?'+':''}${selisihTotal.toLocaleString('id-ID',{maximumFractionDigits:1})} pcs</span>`:'-'}</td>
+      <td>${premixSeharusnya!=null? premixSeharusnya.toLocaleString('id-ID',{maximumFractionDigits:2})+(it?' '+it.satuan:''):'-'}</td>
+      <td>${p.ket||'-'}</td>
+      <td>${p.tanggal}</td>
+      <td>
+        <button class="danger" style="color:var(--blue)" data-edit-produksi="${p.id}">Edit</button>
+        <button class="danger" data-del-produksi="${p.id}">Hapus</button>
+      </td>
+    </tr>${renderRiwayatEditBoxRow(riwayatEditUntuk('produksi', p.id))}`;
+  }).join('');
+
+  const selectedItem = produksiSelectedItemId ? itemById(produksiSelectedItemId) : null;
+  let formBody = '';
+  if(selectedItem){
+    const resepList = selectedItem.resepList||[];
+    if(resepList.length>0){
+      const resepOptions = resepList.map(r=>`<option value="${r.id}" ${r.id===produksiSelectedResepId?'selected':''}>${r.resepQty} Resep (r) — ${r.varian.length} varian</option>`).join('');
+      const selectedResep = resepList.find(r=>r.id===produksiSelectedResepId) || resepList[0];
+      if(!produksiSelectedResepId) produksiSelectedResepId = selectedResep.id;
+      const profilStandar = standarProfilTotal(selectedResep);
+      const varianRowsHtml = selectedResep.varian.map(v=>{
+        const vmax = (v.max!=null && v.max!=='') ? v.max : v.min;
+        return `<tr>
+        <td>${v.nama}</td>
+        <td>${v.min}${v.max&&v.max!==v.min? '-'+v.max:''} pcs</td>
+        <td><input type="number" min="0" class="produksi-varian-input" data-nama="${v.nama}" data-min="${v.min}" data-max="${vmax}" placeholder="hasil aktual" oninput="cekSelisihProduksi(this); hitungRingkasanProduksi();"></td>
+        <td><span class="selisih-badge" data-selisih-for="${v.nama}">-</span></td>
+      </tr>`;
+      }).join('');
+      formBody = `
+      <form class="inline" style="margin-bottom:10px;">
+        <div class="field"><label>Pilih Resep</label><select id="produksi-resep-select">${resepOptions}</select></div>
+      </form>
+      <table><thead><tr><th>Varian Roti</th><th>Rentang Hasil (Acuan)</th><th>Hasil Aktual (pcs)</th><th>Selisih dari Standar</th></tr></thead>
+      <tbody>${varianRowsHtml}</tbody></table>
+      <div class="note">Selisih otomatis muncul saat isi hasil aktual: <span class="sisa-low">merah (−)</span> kalau kurang dari standar, <span class="sisa-ok">hijau (+)</span> kalau lebih dari standar atau sesuai.</div>
+      <div class="grid" id="produksi-ringkasan" style="margin-top:10px;">
+        <div class="stat"><div class="label">Standar Jadi (acuan)</div><div class="value" id="rp-standar">0 pcs</div></div>
+        <div class="stat"><div class="label">Total Jadi (aktual)</div><div class="value" id="rp-jadi">0 pcs</div></div>
+        <div class="stat" id="rp-selisih-box"><div class="label">Selisih</div><div class="value" id="rp-selisih">0 pcs</div></div>
+        <div class="stat"><div class="label">Premix Seharusnya Dipakai</div><div class="value" id="rp-premix-seharusnya">-</div></div>
+      </div>
+      <form class="inline" id="form-produksi" style="margin-top:12px;">
+        <div class="field"><label>Tanggal</label><input name="tanggal" type="date" value="${today()}" required></div>
+        <div class="field"><label>Jumlah Resep Dipakai</label><input name="qtyPremix" type="number" step="any" min="0" value="${selectedResep.resepQty}" data-resep-qty="${selectedResep.resepQty}" data-profil-standar="${profilStandar}" oninput="hitungRingkasanProduksi();" required></div>
+        <div class="field"><label>Keterangan</label><input name="ket" placeholder="opsional"></div>
+        <button class="primary" type="submit">Simpan Produksi</button>
+      </form>`;
+    } else {
+      const tempRows = produksiManualRows.map((v,idx)=>`<tr><td>${v.nama}</td><td>${v.jumlah}</td><td><button class="danger" data-del-manual-varian="${idx}">Hapus</button></td></tr>`).join('');
+      formBody = `
+      <div class="note">Barang ini belum punya resep tersimpan (atur di tab Kode). Sementara isi manual varian & jumlah hasilnya di bawah ini — perhitungan standar/selisih otomatis hanya tersedia untuk premix yang sudah punya resep.</div>
+      <form class="inline" id="form-manual-varian" style="margin:8px 0;">
+        <div class="field"><label>Nama Varian</label><input id="manual-varian-nama" required placeholder="cth: Roti Manis Coklat"></div>
+        <div class="field"><label>Jumlah (pcs)</label><input id="manual-varian-jumlah" type="number" min="0" required></div>
+        <button class="primary" type="submit">+ Tambah Varian</button>
+      </form>
+      ${produksiManualRows.length>0? `<table><thead><tr><th>Varian</th><th>Jumlah</th><th></th></tr></thead><tbody>${tempRows}</tbody></table>` : ''}
+      <form class="inline" id="form-produksi-manual" style="margin-top:12px;">
+        <div class="field"><label>Tanggal</label><input name="tanggal" type="date" value="${today()}" required></div>
+        <div class="field"><label>Jumlah Premix Dipakai</label><input name="qtyPremix" type="number" step="any" min="0" required></div>
+        <div class="field"><label>Keterangan</label><input name="ket" placeholder="opsional"></div>
+        <button class="primary" type="submit" ${produksiManualRows.length===0?'disabled':''}>Simpan Produksi</button>
+      </form>`;
+    }
+  }
+
+  return `
+  <div class="card">
+    <h2>Catat Produksi (Premix → Beberapa Varian Roti)</h2>
+    <div class="sub">Pilih premix, lalu pilih resepnya (kalau sudah diatur di tab Kode) — sistem menampilkan varian &amp; rentang hasil acuannya, tinggal isi hasil aktual per varian. Sistem otomatis menghitung Standar Jadi, Selisih, dan berapa Premix yang <i>seharusnya</i> dipakai berdasarkan hasil aktual.</div>
+    <form class="inline"><div class="field" style="min-width:260px;"><label>Premix</label><select id="produksi-item-select"><option value="">-- pilih premix --</option>${options}</select></div></form>
+    ${formBody}
+  </div>
+  <div class="card">
+    <h2>Riwayat Produksi (${produksi.length})</h2>
+    <table><thead><tr><th>No</th><th>Premix</th><th>Premix Keluar</th><th>Rincian Varian</th><th>Jadi (Aktual)</th><th>Standar Jadi</th><th>Selisih</th><th>Premix Seharusnya</th><th>Ket</th><th>Tanggal</th><th></th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="11" class="empty">Belum ada produksi</td></tr>'}</tbody></table>
+  </div>
+  `;
+}
+function hitungRingkasanProduksi(){
+  const box = document.getElementById('produksi-ringkasan');
+  if(!box) return;
+  let totalAktual = 0;
+  document.querySelectorAll('.produksi-varian-input').forEach(inp=>{ totalAktual += parseFloat(inp.value)||0; });
+  const qtyInput = document.querySelector('[name="qtyPremix"]');
+  const qtyPremix = qtyInput ? (parseFloat(qtyInput.value)||0) : 0;
+  const resepQty = qtyInput ? (parseFloat(qtyInput.dataset.resepQty)||0) : 0;
+  const profilStandar = qtyInput ? (parseFloat(qtyInput.dataset.profilStandar)||0) : 0;
+  const standarJadi = resepQty>0 ? profilStandar*(qtyPremix/resepQty) : profilStandar;
+  const selisih = totalAktual - standarJadi;
+  const premixSeharusnya = profilStandar>0 ? resepQty*(totalAktual/profilStandar) : null;
+  document.getElementById('rp-standar').textContent = standarJadi.toLocaleString('id-ID',{maximumFractionDigits:1})+' pcs';
+  document.getElementById('rp-jadi').textContent = totalAktual.toLocaleString('id-ID')+' pcs';
+  const selisihEl = document.getElementById('rp-selisih');
+  selisihEl.textContent = (selisih>0?'+':'')+selisih.toLocaleString('id-ID',{maximumFractionDigits:1})+' pcs';
+  document.getElementById('rp-selisih-box').className = 'stat '+(selisih<0?'neg':(selisih>0?'pos':''));
+  document.getElementById('rp-premix-seharusnya').textContent = premixSeharusnya!=null ? premixSeharusnya.toLocaleString('id-ID',{maximumFractionDigits:2})+' resep(r)' : '-';
+}
+
+function viewPacking(){
+  const kardusItems = items.filter(i=>i.kategori==='kardus');
+  const varianNama = semuaVarianNama();
+  const kardusOptions = kardusItems.map(it=>`<option value="${it.id}">${it.kode} - ${it.nama} (${it.satuan})</option>`).join('');
+  const cabangOptions = TUJUAN_PACKING.map(c=>`<option value="${c}">${c}</option>`).join('');
+
+  const varianRows = varianNama.map(nama=>{
+    const s = stokVarianGudang(nama);
+    return `<tr>
+      <td>${nama}</td>
+      <td>${s.dihasilkan.toLocaleString('id-ID')} pcs</td>
+      <td>${s.dikemas.toLocaleString('id-ID')} pcs</td>
+      <td class="${s.sisa<0?'sisa-low':'sisa-ok'}">${s.sisa.toLocaleString('id-ID')} pcs</td>
+      <td><input type="number" min="0" class="packing-jumlah" data-varian="${nama}" data-nama="${nama}" placeholder="0"></td>
+    </tr>`;
+  }).join('');
+
+  const rows = packing.slice().sort((a,b)=>b.tanggal.localeCompare(a.tanggal)).map((p,idx)=>{
+    const it = itemById(p.kardusItemId);
+    const rincian = (p.varian||[]).filter(v=>v.jumlah>0).map(v=>`${v.nama}: ${v.jumlah.toLocaleString('id-ID')} pcs`).join(', ');
+    const totalPcs = (p.varian||[]).reduce((s,v)=>s+v.jumlah,0);
+    const isEditing = editingRow && editingRow.dataset==='packing' && editingRow.id===p.id;
+    if(isEditing){
+      return `<tr data-edit-row="packing-${p.id}">
+        <td>${idx+1}</td>
+        <td><select class="edit-cabang">${TUJUAN_PACKING.map(c=>`<option ${c===p.cabang?'selected':''}>${c}</option>`).join('')}</select></td>
+        <td>${rincian || '-'}</td>
+        <td>${totalPcs.toLocaleString('id-ID')} pcs</td>
+        <td>${it? `<span class="kode-badge">${it.kode}</span> ${it.nama}` : '-'}</td>
+        <td><input type="number" step="any" min="0" class="edit-qty" value="${p.qtyKardus}" style="width:90px;"></td>
+        <td><input type="text" class="edit-ket" value="${p.ket||''}" style="width:110px;"></td>
+        <td><input type="date" class="edit-tanggal" value="${p.tanggal}" style="width:130px;"></td>
+        <td>
+          <button class="primary" data-save-edit-packing="${p.id}" style="padding:5px 10px;">Simpan</button>
+          <button class="danger" data-batal-edit>Batal</button>
+        </td>
+      </tr>`;
+    }
+    return `<tr>
+      <td>${idx+1}</td>
+      <td>${p.cabang==='Stock Toko' ? '<span class="tag bahan">Stock Toko</span>' : (p.cabang||'-')}</td>
+      <td>${rincian || '-'}</td>
+      <td>${totalPcs.toLocaleString('id-ID')} pcs</td>
+      <td>${it? `<span class="kode-badge">${it.kode}</span> ${it.nama}` : '-'}</td>
+      <td>${p.qtyKardus.toLocaleString('id-ID')} ${it?it.satuan:''}</td>
+      <td>${p.ket||'-'}</td>
+      <td>${p.tanggal}</td>
+      <td>
+        <button class="danger" style="color:var(--blue)" data-edit-packing="${p.id}">Edit</button>
+        <button class="danger" data-del-packing="${p.id}">Hapus</button>
+      </td>
+    </tr>${renderRiwayatEditBoxRow(riwayatEditUntuk('packing', p.id))}`;
+  }).join('');
+
+  return `
+  <div class="card">
+    <h2>Catat Packing (Roti → Kardus, per Cabang / Stock Toko)</h2>
+    <div class="sub">Isi berapa pcs tiap varian roti yang dikemas, lalu pilih tujuannya: kirim ke salah satu cabang (Tuban, Merakurak, Jatirogo, Palang) atau simpan sebagai Stock Toko. Stok "Sisa Belum Dikemas" dihitung dari total hasil Produksi dikurangi yang sudah pernah dikemas (semua tujuan).</div>
+    ${varianNama.length===0 ? '<div class="empty">Belum ada varian roti — catat dulu di tab Produksi</div>' : `
+    <table><thead><tr><th>Varian Roti</th><th>Total Dihasilkan</th><th>Sudah Dikemas</th><th>Sisa Belum Dikemas</th><th>Dikemas Sekarang</th></tr></thead>
+    <tbody>${varianRows}</tbody></table>
+    ${kardusItems.length===0 ? '<div class="empty" style="margin-top:10px;">Tambahkan barang Kardus dulu di tab Kode untuk melanjutkan</div>' : `
+    <form id="form-packing" style="margin-top:12px;">
+      <div class="inline">
+        <div class="field"><label>Tanggal</label><input type="date" id="packing-tanggal" value="${today()}" required></div>
+        <div class="field"><label>Tujuan (Cabang / Stock Toko)</label><select id="packing-cabang" required>${cabangOptions}</select></div>
+        <div class="field"><label>Kardus Dipakai</label><select id="packing-kardus" required>${kardusOptions}</select></div>
+        <div class="field"><label>Jumlah Kardus</label><input type="number" id="packing-qtykardus" step="any" min="0" required></div>
+        <div class="field"><label>Keterangan</label><input type="text" id="packing-ket" placeholder="opsional"></div>
+        <button class="primary" type="submit">Simpan Packing</button>
+      </div>
+    </form>`}
+    `}
+  </div>
+  <div class="card">
+    <h2>Riwayat Packing (${packing.length})</h2>
+    <table><thead><tr><th>No</th><th>Tujuan</th><th>Rincian Varian</th><th>Total Pcs</th><th>Kardus</th><th>Jumlah Kardus</th><th>Ket</th><th>Tanggal</th><th></th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="9" class="empty">Belum ada packing</td></tr>'}</tbody></table>
+  </div>
+  `;
+}
+
+function viewRetur(){
+  const premixItems = items.filter(i=>i.kategori==='premix');
+  const varianNama = semuaVarianNama();
+  const premixOptions = premixItems.map(it=>`<option value="${it.id}">${it.kode} - ${it.nama} (${it.satuan})</option>`).join('');
+  const varianOptions = varianNama.map(v=>`<option value="${v}">${v}</option>`).join('');
+  const cabangOptions = TUJUAN_PACKING.map(c=>`<option value="${c}">${c}</option>`).join('');
+
+  const rows = retur.slice().sort((a,b)=>b.tanggal.localeCompare(a.tanggal)).map((r,idx)=>{
+    if(r.jenis==='premix'){
+      const it = itemById(r.itemId);
+      return `<tr>
+        <td>${idx+1}</td>
+        <td>${r.tanggal}</td>
+        <td><span class="tag premix">Premix</span></td>
+        <td>${it? `${it.kode} - ${it.nama}` : '-'}</td>
+        <td>${(r.qty||0).toLocaleString('id-ID')} ${it?it.satuan:''}</td>
+        <td>${rupiah(r.nilai)}</td>
+        <td>${r.alasan||'-'}</td>
+        <td><button class="danger" data-del-retur="${r.id}">Hapus</button></td>
+      </tr>`;
+    }
+    return `<tr>
+      <td>${idx+1}</td>
+      <td>${r.tanggal}</td>
+      <td><span class="tag kardus">Roti Jadi</span></td>
+      <td>${r.varianNama} — ${r.cabang}</td>
+      <td>${(r.jumlah||0).toLocaleString('id-ID')} pcs</td>
+      <td>${rupiah(r.nilai)}</td>
+      <td>${r.alasan||'-'}</td>
+      <td><button class="danger" data-del-retur="${r.id}">Hapus</button></td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div class="card">
+    <h2>Catat Retur</h2>
+    <div class="sub">Retur Premix (kembali ke supplier) mengurangi stok premix otomatis. Retur Roti Jadi (kembali dari cabang) tercatat sebagai kerugian dan mengurangi stok efektif di cabang tsb.</div>
+    <form class="inline" style="margin-bottom:10px;">
+      <div class="field"><label>Jenis Retur</label>
+        <select id="retur-jenis-select">
+          <option value="premix" ${returJenis==='premix'?'selected':''}>Premix (ke Supplier)</option>
+          <option value="roti" ${returJenis==='roti'?'selected':''}>Roti Jadi (dari Cabang)</option>
+        </select>
+      </div>
+    </form>
+    ${returJenis==='premix' ? `
+    ${premixItems.length===0 ? '<div class="empty">Tambahkan barang Premix dulu di tab Kode</div>' : `
+    <form class="inline" id="form-retur-premix">
+      <div class="field"><label>Tanggal</label><input name="tanggal" type="date" value="${today()}" required></div>
+      <div class="field"><label>Premix</label><select name="itemId" required>${premixOptions}</select></div>
+      <div class="field"><label>Jumlah</label><input name="qty" type="number" step="any" min="0" required></div>
+      <div class="field"><label>Alasan</label><input name="alasan" placeholder="cth: premix rusak/kadaluarsa"></div>
+      <button class="primary" type="submit">Simpan Retur Premix</button>
+    </form>`}` : `
+    ${varianNama.length===0 ? '<div class="empty">Belum ada varian roti — catat dulu di tab Produksi</div>' : `
+    <form class="inline" id="form-retur-roti">
+      <div class="field"><label>Tanggal</label><input name="tanggal" type="date" value="${today()}" required></div>
+      <div class="field"><label>Varian Roti</label><select name="varianNama" required>${varianOptions}</select></div>
+      <div class="field"><label>Cabang / Toko Asal</label><select name="cabang" required>${cabangOptions}</select></div>
+      <div class="field"><label>Jumlah (pcs)</label><input name="jumlah" type="number" min="0" required></div>
+      <div class="field"><label>Nilai Kerugian (Rp)</label><input name="nilai" type="number" min="0" placeholder="opsional"></div>
+      <div class="field"><label>Alasan</label><input name="alasan" placeholder="cth: tidak laku/kadaluarsa"></div>
+      <button class="primary" type="submit">Simpan Retur Roti</button>
+    </form>`}`}
+  </div>
+  <div class="card">
+    <h2>Riwayat Retur (${retur.length})</h2>
+    <table><thead><tr><th>No</th><th>Tanggal</th><th>Jenis</th><th>Barang / Varian</th><th>Jumlah</th><th>Nilai</th><th>Alasan</th><th></th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="8" class="empty">Belum ada retur</td></tr>'}</tbody></table>
+  </div>
+  `;
+}
+
+function viewPenjualan(){
+  const rows = penjualan.slice().sort((a,b)=>b.tanggal.localeCompare(a.tanggal)).map((p,idx)=>`
+    <tr><td>${idx+1}</td><td>${p.tanggal}</td><td>${rupiah(p.omzet)}</td><td>${p.ket||'-'}</td><td><button class="danger" data-del-jual="${p.id}">Hapus</button></td></tr>`).join('');
+  return `
+  <div class="card">
+    <h2>Catat Omzet Penjualan Roti</h2>
+    <div class="sub">Dipakai untuk menghitung laba rugi</div>
+    <form class="inline" id="form-jual">
+      <div class="field"><label>Tanggal</label><input name="tanggal" type="date" value="${today()}" required></div>
+      <div class="field"><label>Omzet (Rp)</label><input name="omzet" type="number" min="0" required></div>
+      <div class="field"><label>Keterangan</label><input name="ket" placeholder="opsional"></div>
+      <button class="primary" type="submit">Simpan</button>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Riwayat Penjualan (${penjualan.length})</h2>
+    <table><thead><tr><th>No</th><th>Tanggal</th><th>Omzet</th><th>Ket</th><th></th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="5" class="empty">Belum ada data penjualan</td></tr>'}</tbody></table>
+  </div>
+  `;
+}
+
+function viewLaporan(){
+  return `
+  <div class="card">
+    <h2>Laporan Periode</h2>
+    <div class="sub">Pilih rentang tanggal untuk total order, uang keluar, retur, dan laba rugi</div>
+    <form class="inline" id="form-laporan">
+      <div class="field"><label>Dari Tanggal</label><input name="dari" type="date" id="lap-dari"></div>
+      <div class="field"><label>Sampai Tanggal</label><input name="sampai" type="date" id="lap-sampai"></div>
+      <button class="primary" type="submit">Tampilkan</button>
+    </form>
+  </div>
+  <div id="lap-hasil"></div>
+  `;
+}
+
+function hitungLaporan(dari, sampai){
+  const inRange = (tgl)=> (!dari||tgl>=dari) && (!sampai||tgl<=sampai);
+  const trxR = trx.filter(t=>inRange(t.tanggal));
+  const penjR = penjualan.filter(p=>inRange(p.tanggal));
+  const produksiR = produksi.filter(p=>inRange(p.tanggal));
+  const packingR = packing.filter(p=>inRange(p.tanggal));
+
+  const perKategori = {};
+  Object.keys(KATEGORI).forEach(k=> perKategori[k]={qtyMasuk:0,nilaiMasuk:0,qtyKeluar:0,nilaiKeluar:0});
+  trxR.forEach(t=>{
+    const it=itemById(t.itemId); if(!it) return;
+    const nilai = it.harga*t.qty;
+    if(t.tipe==='masuk'){ perKategori[it.kategori].qtyMasuk+=t.qty; perKategori[it.kategori].nilaiMasuk+=nilai; }
+    else { perKategori[it.kategori].qtyKeluar+=t.qty; perKategori[it.kategori].nilaiKeluar+=nilai; }
+  });
+
+  const totalMasukKotor = Object.values(perKategori).reduce((s,k)=>s+k.nilaiMasuk,0);
+  const nilaiReturPremix = returTotalNilai('premix', dari, sampai);
+  const nilaiReturRoti = returTotalNilai('roti', dari, sampai);
+  const jumlahReturRotiPcs = returTotalJumlahRoti(dari, sampai);
+  const totalUangKeluar = totalMasukKotor - nilaiReturPremix;
+  const totalOmzet = penjR.reduce((s,p)=>s+p.omzet,0);
+  const labaRugi = totalOmzet - totalUangKeluar - nilaiReturRoti;
+  const totalHasilProduksi = produksiR.reduce((s,p)=>s+(p.totalHasil||0),0);
+  const totalHasilPacking = packingR.reduce((s,p)=>s+(p.varian||[]).reduce((ss,v)=>ss+v.jumlah,0),0);
+
+  const rows = Object.keys(KATEGORI).map(k=>{
+    const d = perKategori[k];
+    const it0 = items.filter(i=>i.kategori===k);
+    const satuan = it0[0]? it0[0].satuan : '';
+    return `<tr><td><span class="tag ${k}">${KATEGORI[k].label}</span></td><td>${d.qtyMasuk.toLocaleString('id-ID')} ${satuan}</td><td>${rupiah(d.nilaiMasuk)}</td><td>${d.qtyKeluar.toLocaleString('id-ID')} ${satuan}</td><td>${rupiah(d.nilaiKeluar)}</td></tr>`;
+  }).join('');
+
+  const perSupplier = {};
+  SUPPLIERS.forEach(s=> perSupplier[s]={premix:0,bahan:0,kardus:0,total:0});
+  trxR.filter(t=>t.tipe==='masuk' && t.supplier).forEach(t=>{
+    const it = itemById(t.itemId); if(!it) return;
+    const nilai = it.harga*t.qty;
+    if(!perSupplier[t.supplier]) perSupplier[t.supplier] = {premix:0,bahan:0,kardus:0,total:0};
+    perSupplier[t.supplier][it.kategori] += nilai;
+    perSupplier[t.supplier].total += nilai;
+  });
+  const supplierRows = Object.keys(perSupplier).map(s=>{
+    const d = perSupplier[s];
+    return `<tr><td>${s}</td><td>${rupiah(d.premix)}</td><td>${rupiah(d.bahan)}</td><td>${rupiah(d.kardus)}</td><td><b>${rupiah(d.total)}</b></td></tr>`;
+  }).join('');
+
+  document.getElementById('lap-hasil').innerHTML = `
+  <div class="card">
+    <h2>Ringkasan Periode</h2>
+    <div class="grid">
+      <div class="stat"><div class="label">Total Uang Keluar (Neto setelah Retur Premix)</div><div class="value">${rupiah(totalUangKeluar)}</div></div>
+      <div class="stat"><div class="label">Total Omzet Penjualan</div><div class="value">${rupiah(totalOmzet)}</div></div>
+      <div class="stat ${labaRugi>=0?'pos':'neg'}"><div class="label">${labaRugi>=0?'Laba':'Rugi'}</div><div class="value">${rupiah(Math.abs(labaRugi))}</div></div>
+      <div class="stat"><div class="label">Total Hasil Produksi</div><div class="value">${totalHasilProduksi.toLocaleString('id-ID')} pcs</div></div>
+      <div class="stat"><div class="label">Total Hasil Packing</div><div class="value">${totalHasilPacking.toLocaleString('id-ID')} pcs</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Ringkasan Retur (Periode)</h2>
+    <div class="grid">
+      <div class="stat"><div class="label">Nilai Retur Premix (refund dari supplier)</div><div class="value">${rupiah(nilaiReturPremix)}</div></div>
+      <div class="stat"><div class="label">Jumlah Retur Roti</div><div class="value">${jumlahReturRotiPcs.toLocaleString('id-ID')} pcs</div></div>
+      <div class="stat neg"><div class="label">Nilai Kerugian Retur Roti</div><div class="value">${rupiah(nilaiReturRoti)}</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Detail per Kategori</h2>
+    <table><thead><tr><th>Kategori</th><th>Qty Masuk (Order)</th><th>Nilai Order</th><th>Qty Keluar (Pakai)</th><th>Nilai Keluar</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+  </div>
+  <div class="card">
+    <h2>Order per CV / Supplier</h2>
+    <div class="sub">Total pembelian ke tiap CV pada periode ini</div>
+    <table><thead><tr><th>CV</th><th>Premix</th><th>Bahan Baku</th><th>Kardus</th><th>Total</th></tr></thead>
+    <tbody>${supplierRows}</tbody></table>
+  </div>`;
+}
+
+function teksLaporanSore(){
+  const tgl = new Date().toLocaleDateString('id-ID', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  let teks = `*LAPORAN SISA STOK GUDANG*\n${tgl}\n\n`;
+  let grandTotal = 0;
+  Object.keys(KATEGORI).forEach(k=>{
+    const list = items.filter(i=>i.kategori===k);
+    if(list.length===0) return;
+    teks += `*${KATEGORI[k].label.toUpperCase()}*\n`;
+    let subTotal = 0;
+    list.forEach(it=>{
+      const s = stokItem(it.id);
+      const nilai = s.sisa*it.harga;
+      subTotal += nilai;
+      teks += `- ${it.nama}: ${s.sisa.toLocaleString('id-ID')} ${it.satuan} (${rupiah(nilai)})\n`;
+    });
+    teks += `Subtotal ${KATEGORI[k].label}: ${rupiah(subTotal)}\n\n`;
+    grandTotal += subTotal;
+  });
+  teks += `*TOTAL NILAI SEMUA SISA STOK: ${rupiah(grandTotal)}*`;
+  return teks;
+}
+
+function viewLaporanSore(){
+  const teks = teksLaporanSore();
+  let grandTotal = 0;
+  const kategoriCards = Object.keys(KATEGORI).map(k=>{
+    const list = items.filter(i=>i.kategori===k);
+    let subTotal = 0;
+    const rows = list.map((it,idx)=>{
+      const s = stokItem(it.id);
+      const nilai = s.sisa*it.harga;
+      subTotal += nilai;
+      return `<tr><td>${idx+1}</td><td><span class="kode-badge">${it.kode}</span></td><td>${it.nama}</td><td class="${s.sisa<0?'sisa-low':'sisa-ok'}">${s.sisa.toLocaleString('id-ID')} ${it.satuan}</td><td>${rupiah(nilai)}</td></tr>`;
+    }).join('');
+    grandTotal += subTotal;
+    return `<div class="card">
+      <h2><span class="tag ${k}">${KATEGORI[k].label}</span></h2>
+      <table><thead><tr><th>No</th><th>Kode</th><th>Nama</th><th>Sisa</th><th>Nilai</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="5" class="empty">Belum ada barang</td></tr>'}</tbody></table>
+      <div class="note">Subtotal ${KATEGORI[k].label}: <b>${rupiah(subTotal)}</b></div>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="card">
+    <h2>Laporan Sisa Stok Sore Ini</h2>
+    <div class="sub">Dikirim setiap sore oleh admin gudang: rekap sisa Premix, Bahan Baku &amp; Kardus beserta total uangnya. Klik tombol di bawah untuk menyalin teks siap kirim ke WhatsApp.</div>
+    <div class="grid">
+      <div class="stat"><div class="label">Total Nilai Semua Sisa Stok</div><div class="value">${rupiah(grandTotal)}</div></div>
+    </div>
+    <div style="margin-top:10px;"><button class="primary" id="btn-copy-laporan-sore">📋 Salin Teks untuk WhatsApp</button> <span id="copy-status" class="note"></span></div>
+  </div>
+  ${kategoriCards}
+  `;
+}
+
+function attachHandlers(){
+  const fi = document.getElementById('form-item');
+  if(fi){
+    fi.onsubmit = async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(fi);
+      const kategori = fd.get('kategori');
+      const novo = { id:uid(), kode: nextKode(kategori), kategori, nama: fd.get('nama').trim(),
+        satuan: fd.get('satuan').trim(), harga: parseFloat(fd.get('harga'))||0 };
+      if(kategori==='premix') novo.resepList = [];
+      items.push(novo);
+      await save('items', items);
+      renderAll();
+    };
+  }
+  document.querySelectorAll('[data-goto-keluar]').forEach(b=>{
+    b.onclick = ()=>{ activeTab='keluar'; renderAll(); };
+  });
+  document.querySelectorAll('[data-del-item]').forEach(b=>{
+    b.onclick = async ()=>{
+      const id=b.dataset.delItem;
+      items = items.filter(i=>i.id!==id);
+      trx = trx.filter(t=>t.itemId!==id);
+      await save('items', items); await save('trx', trx);
+      if(resepBuilderItemId===id){ resepBuilderItemId=null; tempResepVarian=[]; }
+      renderAll();
+    };
+  });
+
+  // -- Kode: builder resep --
+  const resepItemSelect = document.getElementById('resep-item-select');
+  if(resepItemSelect){
+    resepItemSelect.onchange = ()=>{
+      resepBuilderItemId = resepItemSelect.value || null;
+      resepBuilderQty=''; tempResepVarian=[];
+      renderAll();
+    };
+  }
+  const btnBatalResep = document.getElementById('btn-batal-resep');
+  if(btnBatalResep){ btnBatalResep.onclick = ()=>{ resepBuilderItemId=null; resepBuilderQty=''; tempResepVarian=[]; renderAll(); }; }
+
+  const formTempVarian = document.getElementById('form-temp-varian');
+  if(formTempVarian){
+    formTempVarian.onsubmit = (e)=>{
+      e.preventDefault();
+      const nama = document.getElementById('temp-varian-nama').value.trim();
+      const min = parseFloat(document.getElementById('temp-varian-min').value)||0;
+      const maxRaw = document.getElementById('temp-varian-max').value;
+      const max = maxRaw===''? min : parseFloat(maxRaw)||min;
+      if(!nama) return;
+      const qInp = document.getElementById('resep-qty-input');
+      if(qInp) resepBuilderQty = qInp.value;
+      tempResepVarian.push({nama, min, max});
+      renderAll();
+    };
+  }
+  document.querySelectorAll('[data-del-temp-varian]').forEach(b=>{
+    b.onclick = ()=>{
+      const qInp = document.getElementById('resep-qty-input');
+      if(qInp) resepBuilderQty = qInp.value;
+      tempResepVarian.splice(parseInt(b.dataset.delTempVarian),1);
+      renderAll();
+    };
+  });
+  const btnSimpanResep = document.getElementById('btn-simpan-resep');
+  if(btnSimpanResep){
+    btnSimpanResep.onclick = async ()=>{
+      const qInp = document.getElementById('resep-qty-input');
+      const resepQty = parseFloat(qInp ? qInp.value : resepBuilderQty)||0;
+      if(resepQty<=0 || tempResepVarian.length===0) return;
+      const it = itemById(resepBuilderItemId); if(!it) return;
+      if(!it.resepList) it.resepList=[];
+      it.resepList.push({ id:uid(), resepQty, varian: tempResepVarian.map(v=>({id:uid(), ...v})) });
+      await save('items', items);
+      resepBuilderQty=''; tempResepVarian=[];
+      renderAll();
+    };
+  }
+  document.querySelectorAll('[data-del-resep]').forEach(b=>{
+    b.onclick = async ()=>{
+      const it = itemById(b.dataset.item); if(!it) return;
+      it.resepList = (it.resepList||[]).filter(r=>r.id!==b.dataset.delResep);
+      await save('items', items);
+      renderAll();
+    };
+  });
+
+  const ft = document.getElementById('form-trx');
+  if(ft){
+    ft.onsubmit = async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(ft);
+      await tambahTrx({ tanggal: fd.get('tanggal'), itemId: fd.get('itemId'), tipe: ft.dataset.tipe,
+        supplier: fd.get('supplier')||'', qty: parseFloat(fd.get('qty'))||0, ket: fd.get('ket')||'' });
+      renderAll();
+    };
+  }
+  document.querySelectorAll('[data-del-trx]').forEach(b=>{
+    b.onclick = async ()=>{ trx = trx.filter(t=>t.id!==b.dataset.delTrx); await save('trx', trx); renderAll(); };
+  });
+
+  // -- Filter Masuk/Keluar --
+  const ffTrx = document.getElementById('form-filter-trx');
+  if(ffTrx){
+    ffTrx.onsubmit = (e)=>{
+      e.preventDefault();
+      const fd = new FormData(ffTrx);
+      const tipe = ffTrx.dataset.tipe;
+      filterTrx[tipe] = { kategori: fd.get('kategori')||'', dari: fd.get('dari')||'', sampai: fd.get('sampai')||'' };
+      renderAll();
+    };
+  }
+  const btnResetFilterTrx = document.getElementById('btn-reset-filter-trx');
+  if(btnResetFilterTrx){
+    btnResetFilterTrx.onclick = ()=>{
+      const tipe = ffTrx.dataset.tipe;
+      filterTrx[tipe] = { kategori:'', dari:'', sampai:'' };
+      renderAll();
+    };
+  }
+
+  // -- Edit inline Trx (Masuk/Keluar) --
+  document.querySelectorAll('[data-edit-trx]').forEach(b=>{
+    b.onclick = ()=>{ editingRow = {dataset:'trx', id:b.dataset.editTrx}; renderAll(); };
+  });
+  document.querySelectorAll('[data-batal-edit]').forEach(b=>{
+    b.onclick = ()=>{ editingRow = null; renderAll(); };
+  });
+  document.querySelectorAll('[data-save-edit-trx]').forEach(b=>{
+    b.onclick = async ()=>{
+      const id = b.dataset.saveEditTrx;
+      const t = trx.find(x=>x.id===id); if(!t) return;
+      const tr = document.querySelector(`[data-edit-row="trx-${id}"]`);
+      const before = {...t};
+      const qty = parseFloat(tr.querySelector('.edit-qty').value)||0;
+      const ket = tr.querySelector('.edit-ket').value||'';
+      const tanggal = tr.querySelector('.edit-tanggal').value;
+      const supplierEl = tr.querySelector('.edit-supplier');
+      t.qty = qty; t.ket = ket; t.tanggal = tanggal;
+      if(supplierEl) t.supplier = supplierEl.value;
+      await save('trx', trx);
+      const it = itemById(t.itemId);
+      await catatEdit('trx', id, `${t.tipe==='masuk'?'Stok Masuk':'Stok Keluar'} — ${it?it.nama:''}`, before, t);
+      editingRow = null;
+      renderAll();
+    };
+  });
+
+  const fo = document.getElementById('form-opname');
+  if(fo){
+    const tglInp = document.getElementById('opname-tanggal');
+    const jenisSel = document.getElementById('opname-jenis');
+    jenisSel.value = jenisOtomatis(tglInp.value);
+    tglInp.onchange = ()=>{ jenisSel.value = jenisOtomatis(tglInp.value); };
+
+    fo.onsubmit = async (e)=>{
+      e.preventDefault();
+      const tanggal = tglInp.value;
+      const jenis = jenisSel.value;
+      const catatan = document.getElementById('opname-catatan').value;
+      const entries = [];
+      document.querySelectorAll('.opname-fisik').forEach(inp=>{
+        const itemId = inp.dataset.item;
+        const sistem = parseFloat(inp.dataset.sistem)||0;
+        const fisikRaw = inp.value;
+        const fisik = fisikRaw===''? sistem : parseFloat(fisikRaw);
+        entries.push({ itemId, stokSistem: sistem, stokFisik: fisik, selisih: fisik-sistem });
+      });
+      opname.push({ id:uid(), tanggal, jenis, catatan, entries, diterapkan:false });
+      await save('opname', opname);
+      renderAll();
+    };
+  }
+
+  document.querySelectorAll('[data-terapkan-opname]').forEach(b=>{
+    b.onclick = async ()=>{
+      const o = opname.find(x=>x.id===b.dataset.terapkanOpname);
+      if(!o) return;
+      for(const e of o.entries){
+        if(e.selisih===0) continue;
+        const it = itemById(e.itemId); if(!it) continue;
+        if(e.selisih>0){
+          await tambahTrx({ tanggal:o.tanggal, itemId:e.itemId, tipe:'masuk', qty:e.selisih, ket:'Penyesuaian Opname '+o.jenis });
+        } else {
+          await tambahTrx({ tanggal:o.tanggal, itemId:e.itemId, tipe:'keluar', qty:Math.abs(e.selisih), ket:'Penyesuaian Opname '+o.jenis });
+        }
+      }
+      o.diterapkan = true;
+      await save('opname', opname);
+      renderAll();
+    };
+  });
+
+  document.querySelectorAll('[data-del-opname]').forEach(b=>{
+    b.onclick = async ()=>{ opname = opname.filter(o=>o.id!==b.dataset.delOpname); await save('opname', opname); renderAll(); };
+  });
+
+  // -- Produksi --
+  const produksiItemSelect = document.getElementById('produksi-item-select');
+  if(produksiItemSelect){
+    produksiItemSelect.onchange = ()=>{
+      produksiSelectedItemId = produksiItemSelect.value || null;
+      produksiSelectedResepId = null; produksiManualRows = [];
+      renderAll();
+    };
+  }
+  const produksiResepSelect = document.getElementById('produksi-resep-select');
+  if(produksiResepSelect){
+    produksiResepSelect.onchange = ()=>{ produksiSelectedResepId = produksiResepSelect.value; renderAll(); };
+  }
+  const fp = document.getElementById('form-produksi');
+  if(fp){
+    fp.onsubmit = async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(fp);
+      const it = itemById(produksiSelectedItemId);
+      const resep = (it.resepList||[]).find(r=>r.id===produksiSelectedResepId);
+      const varianHasil = [];
+      document.querySelectorAll('.produksi-varian-input').forEach(inp=>{
+        const jumlah = parseFloat(inp.value)||0;
+        if(jumlah>0) varianHasil.push({ nama: inp.dataset.nama, jumlah, min: parseFloat(inp.dataset.min)||0, max: parseFloat(inp.dataset.max)||0 });
+      });
+      if(varianHasil.length===0){ alert('Isi minimal satu hasil varian roti'); return; }
+      const qtyPremix = parseFloat(fd.get('qtyPremix'))||0;
+      const totalHasil = varianHasil.reduce((s,v)=>s+v.jumlah,0);
+      const tanggal = fd.get('tanggal');
+      const ket = fd.get('ket')||'';
+      let standarJadi = null, premixSeharusnya = null;
+      if(resep){
+        const profilStandar = standarProfilTotal(resep);
+        standarJadi = resep.resepQty>0 ? profilStandar*(qtyPremix/resep.resepQty) : profilStandar;
+        premixSeharusnya = profilStandar>0 ? resep.resepQty*(totalHasil/profilStandar) : null;
+      }
+      produksi.push({id:uid(), tanggal, premixItemId:produksiSelectedItemId, resepId: resep?resep.id:null, qtyPremix, varianHasil, totalHasil, ket, standarJadi, premixSeharusnya});
+      await save('produksi', produksi);
+      await tambahTrx({tanggal, itemId:produksiSelectedItemId, tipe:'keluar', qty:qtyPremix, ket:'Produksi'+(resep?` (${resep.resepQty}r)`:'')+(ket?': '+ket:'')});
+      produksiSelectedItemId=null; produksiSelectedResepId=null;
+      renderAll();
+    };
+  }
+  const formManualVarian = document.getElementById('form-manual-varian');
+  if(formManualVarian){
+    formManualVarian.onsubmit = (e)=>{
+      e.preventDefault();
+      const nama = document.getElementById('manual-varian-nama').value.trim();
+      const jumlah = parseFloat(document.getElementById('manual-varian-jumlah').value)||0;
+      if(!nama || jumlah<=0) return;
+      produksiManualRows.push({nama, jumlah});
+      renderAll();
+    };
+  }
+  document.querySelectorAll('[data-del-manual-varian]').forEach(b=>{
+    b.onclick = ()=>{ produksiManualRows.splice(parseInt(b.dataset.delManualVarian),1); renderAll(); };
+  });
+  const fpm = document.getElementById('form-produksi-manual');
+  if(fpm){
+    fpm.onsubmit = async (e)=>{
+      e.preventDefault();
+      if(produksiManualRows.length===0) return;
+      const fd = new FormData(fpm);
+      const qtyPremix = parseFloat(fd.get('qtyPremix'))||0;
+      const totalHasil = produksiManualRows.reduce((s,v)=>s+v.jumlah,0);
+      const tanggal = fd.get('tanggal');
+      const ket = fd.get('ket')||'';
+      produksi.push({id:uid(), tanggal, premixItemId:produksiSelectedItemId, resepId:null, qtyPremix, varianHasil:[...produksiManualRows], totalHasil, ket});
+      await save('produksi', produksi);
+      await tambahTrx({tanggal, itemId:produksiSelectedItemId, tipe:'keluar', qty:qtyPremix, ket:'Produksi'+(ket?': '+ket:'')});
+      produksiSelectedItemId=null; produksiManualRows=[];
+      renderAll();
+    };
+  }
+  document.querySelectorAll('[data-del-produksi]').forEach(b=>{
+    b.onclick = async ()=>{ produksi = produksi.filter(p=>p.id!==b.dataset.delProduksi); await save('produksi', produksi); renderAll(); };
+  });
+  document.querySelectorAll('[data-edit-produksi]').forEach(b=>{
+    b.onclick = ()=>{ editingRow = {dataset:'produksi', id:b.dataset.editProduksi}; renderAll(); };
+  });
+  document.querySelectorAll('[data-save-edit-produksi]').forEach(b=>{
+    b.onclick = async ()=>{
+      const id = b.dataset.saveEditProduksi;
+      const p = produksi.find(x=>x.id===id); if(!p) return;
+      const tr = document.querySelector(`[data-edit-row="produksi-${id}"]`);
+      const before = {...p};
+      p.qtyPremix = parseFloat(tr.querySelector('.edit-qty').value)||0;
+      p.ket = tr.querySelector('.edit-ket').value||'';
+      p.tanggal = tr.querySelector('.edit-tanggal').value;
+      // qty premix keluar diedit juga menyesuaikan transaksi keluar yang tercatat otomatis dari produksi ini
+      const trxTerkait = trx.find(t=>t.itemId===p.premixItemId && t.tipe==='keluar' && t.ket && t.ket.startsWith('Produksi') && Math.abs(t.qty-before.qtyPremix)<0.0001 && t.tanggal===before.tanggal);
+      if(trxTerkait){ trxTerkait.qty = p.qtyPremix; trxTerkait.tanggal = p.tanggal; await save('trx', trx); }
+      await save('produksi', produksi);
+      const it = itemById(p.premixItemId);
+      await catatEdit('produksi', id, `Produksi — ${it?it.nama:''}`, before, p);
+      editingRow = null;
+      renderAll();
+    };
+  });
+
+  const fk = document.getElementById('form-packing');
+  if(fk){
+    fk.onsubmit = async (e)=>{
+      e.preventDefault();
+      const varian = [];
+      document.querySelectorAll('.packing-jumlah').forEach(inp=>{
+        const jumlah = parseFloat(inp.value)||0;
+        if(jumlah>0) varian.push({ nama: inp.dataset.nama, jumlah });
+      });
+      if(varian.length===0){ alert('Isi minimal satu varian roti yang dikemas'); return; }
+      const cabang = document.getElementById('packing-cabang').value;
+      const kardusItemId = document.getElementById('packing-kardus').value;
+      const qtyKardus = parseFloat(document.getElementById('packing-qtykardus').value)||0;
+      const ket = document.getElementById('packing-ket').value||'';
+      const tanggal = document.getElementById('packing-tanggal').value;
+      packing.push({id:uid(), tanggal, cabang, varian, kardusItemId, qtyKardus, ket});
+      await save('packing', packing);
+      await tambahTrx({tanggal, itemId:kardusItemId, tipe:'keluar', qty:qtyKardus, ket:'Packing ke '+cabang+(ket?': '+ket:'')});
+      renderAll();
+    };
+  }
+  document.querySelectorAll('[data-del-packing]').forEach(b=>{
+    b.onclick = async ()=>{ packing = packing.filter(p=>p.id!==b.dataset.delPacking); await save('packing', packing); renderAll(); };
+  });
+  document.querySelectorAll('[data-edit-packing]').forEach(b=>{
+    b.onclick = ()=>{ editingRow = {dataset:'packing', id:b.dataset.editPacking}; renderAll(); };
+  });
+  document.querySelectorAll('[data-save-edit-packing]').forEach(b=>{
+    b.onclick = async ()=>{
+      const id = b.dataset.saveEditPacking;
+      const p = packing.find(x=>x.id===id); if(!p) return;
+      const tr = document.querySelector(`[data-edit-row="packing-${id}"]`);
+      const before = {...p};
+      p.cabang = tr.querySelector('.edit-cabang').value;
+      p.qtyKardus = parseFloat(tr.querySelector('.edit-qty').value)||0;
+      p.ket = tr.querySelector('.edit-ket').value||'';
+      p.tanggal = tr.querySelector('.edit-tanggal').value;
+      const trxTerkait = trx.find(t=>t.itemId===p.kardusItemId && t.tipe==='keluar' && t.ket && t.ket.startsWith('Packing ke') && Math.abs(t.qty-before.qtyKardus)<0.0001 && t.tanggal===before.tanggal);
+      if(trxTerkait){ trxTerkait.qty = p.qtyKardus; trxTerkait.tanggal = p.tanggal; trxTerkait.ket = 'Packing ke '+p.cabang+(p.ket?': '+p.ket:''); await save('trx', trx); }
+      await save('packing', packing);
+      await catatEdit('packing', id, `Packing — ${before.cabang}`, before, p);
+      editingRow = null;
+      renderAll();
+    };
+  });
+
+  // -- Retur --
+  const returJenisSelect = document.getElementById('retur-jenis-select');
+  if(returJenisSelect){
+    returJenisSelect.onchange = ()=>{ returJenis = returJenisSelect.value; renderAll(); };
+  }
+  const frp = document.getElementById('form-retur-premix');
+  if(frp){
+    frp.onsubmit = async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(frp);
+      const itemId = fd.get('itemId');
+      const qty = parseFloat(fd.get('qty'))||0;
+      const it = itemById(itemId); if(!it || qty<=0) return;
+      const tanggal = fd.get('tanggal');
+      const alasan = fd.get('alasan')||'';
+      const nilai = qty*it.harga;
+      retur.push({id:uid(), tanggal, jenis:'premix', itemId, qty, nilai, alasan});
+      await save('retur', retur);
+      await tambahTrx({tanggal, itemId, tipe:'keluar', qty, ket:'Retur Premix ke Supplier'+(alasan?': '+alasan:'')});
+      renderAll();
+    };
+  }
+  const frr = document.getElementById('form-retur-roti');
+  if(frr){
+    frr.onsubmit = async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(frr);
+      const varianNama = fd.get('varianNama');
+      const cabang = fd.get('cabang');
+      const jumlah = parseFloat(fd.get('jumlah'))||0;
+      if(!varianNama || !cabang || jumlah<=0) return;
+      const tanggal = fd.get('tanggal');
+      const nilai = parseFloat(fd.get('nilai'))||0;
+      const alasan = fd.get('alasan')||'';
+      retur.push({id:uid(), tanggal, jenis:'roti', varianNama, cabang, jumlah, nilai, alasan});
+      await save('retur', retur);
+      renderAll();
+    };
+  }
+  document.querySelectorAll('[data-del-retur]').forEach(b=>{
+    b.onclick = async ()=>{ retur = retur.filter(r=>r.id!==b.dataset.delRetur); await save('retur', retur); renderAll(); };
+  });
+
+  const fj = document.getElementById('form-jual');
+  if(fj){
+    fj.onsubmit = async (e)=>{
+      e.preventDefault();
+      const fd = new FormData(fj);
+      penjualan.push({id:uid(), tanggal: fd.get('tanggal'), omzet: parseFloat(fd.get('omzet'))||0, ket: fd.get('ket')||''});
+      await save('penjualan', penjualan);
+      renderAll();
+    };
+  }
+  document.querySelectorAll('[data-del-jual]').forEach(b=>{
+    b.onclick = async ()=>{ penjualan = penjualan.filter(p=>p.id!==b.dataset.delJual); await save('penjualan', penjualan); renderAll(); };
+  });
+
+  const fl = document.getElementById('form-laporan');
+  if(fl){
+    fl.onsubmit = (e)=>{ e.preventDefault(); hitungLaporan(document.getElementById('lap-dari').value, document.getElementById('lap-sampai').value); };
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+    const last = today();
+    document.getElementById('lap-dari').value = first;
+    document.getElementById('lap-sampai').value = last;
+    hitungLaporan(first, last);
+  }
+
+  const btnCopySore = document.getElementById('btn-copy-laporan-sore');
+  if(btnCopySore){
+    btnCopySore.onclick = async ()=>{
+      const status = document.getElementById('copy-status');
+      try{
+        await navigator.clipboard.writeText(teksLaporanSore());
+        if(status) status.textContent = 'Tersalin! Tempel (paste) ke chat WhatsApp.';
+      }catch(e){
+        if(status) status.textContent = 'Gagal menyalin otomatis — salin manual dari tabel di bawah.';
+      }
+    };
+  }
+}
+
+(function initDataTools(){
+  const btnExport = document.getElementById('btn-export-excel');
+  const btnImport = document.getElementById('btn-import-excel');
+  const inputImport = document.getElementById('input-import-excel');
+  const btnRefresh = document.getElementById('btn-refresh-db');
+  if(btnExport) btnExport.onclick = exportExcel;
+  if(btnImport) btnImport.onclick = ()=> inputImport.click();
+  if(inputImport) inputImport.onchange = (e)=>{
+    const file = e.target.files[0];
+    if(file) importExcel(file);
+    inputImport.value = '';
+  };
+  if(btnRefresh) btnRefresh.onclick = async ()=>{
+    btnRefresh.disabled = true;
+    await loadAll();
+    updateDbStatusBadge();
+    renderAll();
+    btnRefresh.disabled = false;
+  };
+})();
+
+(async function init(){
+  await loadAll();
+  updateDbStatusBadge();
+  renderAll();
+  subscribeRealtime();
+})();
+
+</script>
+
+</body></html>
